@@ -40,6 +40,7 @@ export function Footer() {
             <h3 className="font-semibold mb-4">Product</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link href="/generate" className="hover:text-foreground transition-colors">Generator</Link></li>
+              <li><Link href="/tools" className="hover:text-foreground transition-colors">Tools</Link></li>
               <li><Link href="/pricing" className="hover:text-foreground transition-colors">Pricing</Link></li>
               <li><Link href="/dashboard" className="hover:text-foreground transition-colors">Dashboard</Link></li>
               <li><Link href="/integrations" className="hover:text-foreground transition-colors">Integrations</Link></li>

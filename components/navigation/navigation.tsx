@@ -46,6 +46,9 @@ export function Navigation() {
             <Link href="/generate" className="text-foreground/80 hover:text-foreground transition-colors">
               Generator
             </Link>
+            <Link href="/tools" className="text-foreground/80 hover:text-foreground transition-colors">
+              Tools
+            </Link>
             <Link href="/pricing" className="text-foreground/80 hover:text-foreground transition-colors">
               Pricing
             </Link>
@@ -100,6 +103,9 @@ export function Navigation() {
               </Link>
               <Link href="/generate" className="text-foreground/80 hover:text-foreground transition-colors">
                 Generator
+              </Link>
+              <Link href="/tools" className="text-foreground/80 hover:text-foreground transition-colors">
+                Tools
               </Link>
               <Link href="/pricing" className="text-foreground/80 hover:text-foreground transition-colors">
                 Pricing

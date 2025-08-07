@@ -21,6 +21,8 @@ import { useState } from 'react';
 import { DashboardChart } from '@/components/dashboard/dashboard-chart';
 import { QuickActions } from '@/components/dashboard/quick-actions';
 import { NotificationCenter } from '@/components/dashboard/notification-center';
+import { OnboardingModal } from '@/components/onboarding/onboarding-modal';
+import { useEffect } from 'react';
 
 const sidebarItems = [
   { icon: Home, label: 'Home', active: true },
@@ -41,6 +43,21 @@ const stats = [
 
 export default function DashboardPage() {
   const [activePage, setActivePage] = useState('Home');
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Show onboarding for new users (you can add logic to check if user is new)
+  useEffect(() => {
+    const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding');
+    if (!hasSeenOnboarding) {
+      setShowOnboarding(true);
+    }
+  }, []);
+
+  const handleOnboardingComplete = (data: any) => {
+    localStorage.setItem('hasSeenOnboarding', 'true');
+    localStorage.setItem('userOnboardingData', JSON.stringify(data));
+    console.log('Onboarding completed with data:', data);
+  };
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -216,6 +233,12 @@ export default function DashboardPage() {
           </div>
         </main>
       </div>
+      
+      <OnboardingModal
+        isOpen={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
+        onComplete={handleOnboardingComplete}
+      />
     </div>
   );
 }

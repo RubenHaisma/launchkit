@@ -23,7 +23,7 @@ export function HeroSection() {
         >
           <div className="inline-flex items-center space-x-2 glassmorphism rounded-full px-4 py-2 mb-6">
             <Sparkles className="h-4 w-4 text-purple-400" />
-            <span className="text-sm font-medium">AI-Powered Marketing Revolution</span>
+            <span className="text-sm font-medium">🚀 AI-Powered Marketing Revolution</span>
           </div>
           
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold font-sora leading-tight mb-6">
@@ -39,7 +39,7 @@ export function HeroSection() {
             <span className="text-pink-400 font-semibold">TweetHunter</span>,{' '}
             <span className="text-green-400 font-semibold">Mailchimp</span> & more.
             <br />
-            One platform. Infinite possibilities.
+            <span className="text-gradient font-semibold">One platform. Infinite possibilities.</span>
           </p>
         </motion.div>
 

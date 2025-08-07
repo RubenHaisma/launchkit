@@ -23,6 +23,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Navigation } from '@/components/navigation/navigation';
 import { Footer } from '@/components/sections/footer';
+import { SuccessModal } from '@/components/ui/success-modal';
 
 const contentTypes = [
   { 
@@ -77,6 +78,7 @@ export default function GeneratePage() {
   const [audience, setAudience] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState('');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const handleGenerate = async () => {
     if (!productDescription || !tone || !audience) return;
@@ -88,6 +90,7 @@ export default function GeneratePage() {
       const mockContent = generateMockContent(selectedType, productDescription, tone, audience);
       setGeneratedContent(mockContent);
       setIsGenerating(false);
+      setShowSuccessModal(true);
     }, 3000);
   };
 
@@ -413,6 +416,15 @@ Ready to hunt! 🦄`
               )}
             </motion.div>
           </div>
+          
+          <SuccessModal
+            isOpen={showSuccessModal}
+            onClose={() => setShowSuccessModal(false)}
+            title="Content Generated Successfully!"
+            message={`Your ${selectedTypeData?.title.toLowerCase()} is ready to use`}
+            content={generatedContent}
+            type={selectedType as any}
+          />
         </div>
       </section>
 

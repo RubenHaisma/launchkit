@@ -388,14 +388,30 @@ export default function GeneratePage() {
                           <span className="text-xs text-muted-foreground">
                             {new Date(content.createdAt).toLocaleString()}
                           </span>
-                          <Button
-                            size="sm"
-                            onClick={() => saveAsCampaign(content)}
-                            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
-                          >
-                            <Send className="h-3 w-3 mr-1" />
-                            Use in Campaign
-                          </Button>
+                          <div className="flex items-center space-x-2">
+                            {content.type === 'tweet' && (
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(content.content)}`;
+                                  window.open(twitterUrl, '_blank');
+                                  toast.success('🐦 Opened Twitter with your content!');
+                                }}
+                                className="bg-blue-500 hover:bg-blue-600 text-white"
+                              >
+                                <Twitter className="h-3 w-3 mr-1" />
+                                Post to X
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              onClick={() => saveAsCampaign(content)}
+                              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+                            >
+                              <Send className="h-3 w-3 mr-1" />
+                              Save
+                            </Button>
+                          </div>
                         </div>
                       </>
                     )}

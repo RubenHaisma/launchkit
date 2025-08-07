@@ -54,8 +54,8 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link href="/about" className="hover:text-foreground transition-colors">About</Link></li>
               <li><Link href="/blog" className="hover:text-foreground transition-colors">Blog</Link></li>
-              <li><Link href="/careers" className="hover:text-foreground transition-colors">Careers</Link></li>
               <li><Link href="/contact" className="hover:text-foreground transition-colors">Contact</Link></li>
+              <li><Link href="/security" className="hover:text-foreground transition-colors">Security</Link></li>
             </ul>
           </div>
         </div>
@@ -67,7 +67,7 @@ export function Footer() {
           <div className="flex items-center space-x-6 text-sm text-muted-foreground mt-4 md:mt-0">
             <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
             <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
-            <Link href="/security" className="hover:text-foreground transition-colors">Security</Link>
+            <Link href="/contact" className="hover:text-foreground transition-colors">Contact</Link>
           </div>
         </div>
       </div>

@@ -5,21 +5,6 @@ import { Rocket, Heart, Target, Users } from 'lucide-react';
 import { Navigation } from '@/components/navigation/navigation';
 import { Footer } from '@/components/sections/footer';
 
-const founders = [
-  {
-    name: 'Alex Chen',
-    role: 'Co-founder & CEO',
-    bio: 'Former Product Manager at Stripe. Built and launched 12 SaaS products.',
-    avatar: 'https://images.pexels.com/photos/3785079/pexels-photo-3785079.jpeg?auto=compress&cs=tinysrgb&w=300',
-  },
-  {
-    name: 'Sarah Kim',
-    role: 'Co-founder & CTO',
-    bio: 'Ex-Google AI researcher. Passionate about democratizing AI for creators.',
-    avatar: 'https://images.pexels.com/photos/3769021/pexels-photo-3769021.jpeg?auto=compress&cs=tinysrgb&w=300',
-  },
-];
-
 const timeline = [
   { year: '2023', title: 'The Idea', description: 'Frustrated with juggling 6+ marketing tools, we decided to build one platform to rule them all.' },
   { year: '2024', title: 'First Users', description: 'Launched in private beta. 500 indie makers signed up in the first week.' },
@@ -129,7 +114,7 @@ export default function AboutPage() {
             </div>
           </motion.div>
 
-          {/* Founders */}
+          {/* Team Section - Placeholder */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -137,22 +122,17 @@ export default function AboutPage() {
             className="text-center"
           >
             <h2 className="text-3xl md:text-5xl font-bold font-sora mb-16">
-              Meet the <span className="text-gradient">Founders</span>
+              Built by <span className="text-gradient">Indie Makers</span>
             </h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-              {founders.map((founder, index) => (
-                <div key={founder.name} className="glassmorphism rounded-xl p-8 hover-lift">
-                  <img
-                    src={founder.avatar}
-                    alt={founder.name}
-                    className="w-32 h-32 rounded-full mx-auto mb-6 object-cover"
-                  />
-                  <h3 className="text-2xl font-bold font-sora mb-2">{founder.name}</h3>
-                  <div className="text-purple-400 font-semibold mb-4">{founder.role}</div>
-                  <p className="text-muted-foreground">{founder.bio}</p>
-                </div>
-              ))}
+            <div className="glassmorphism rounded-xl p-8 max-w-2xl mx-auto">
+              <p className="text-lg text-muted-foreground mb-6">
+                LaunchPilot is built by a passionate team of indie makers who understand the challenges of building and marketing SaaS products.
+              </p>
+              <p className="text-muted-foreground">
+                We're a remote-first team focused on creating tools that actually help founders succeed. 
+                Our mission is to democratize world-class marketing for every indie maker.
+              </p>
             </div>
           </motion.div>
         </div>

@@ -23,6 +23,7 @@ import { Switch } from '@/components/ui/switch';
 import { useDashboardStore } from '@/lib/store/dashboard-store';
 import { useTheme } from 'next-themes';
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 import toast from 'react-hot-toast';
 
 const settingsSections = [

@@ -81,9 +81,9 @@ export const useDashboardStore = create<DashboardState>()(
     (set, get) => ({
       // Initial state
       profile: {
-        name: 'Sarah Chen',
-        email: 'sarah@taskflow.ai',
-        company: 'TaskFlow AI',
+        name: 'Demo User',
+        email: 'demo@launchpilot.ai',
+        company: 'LaunchPilot Demo',
         industry: 'productivity',
       },
 

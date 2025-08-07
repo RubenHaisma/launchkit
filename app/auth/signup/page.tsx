@@ -1,25 +1,78 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, Mail, Lock, User, Rocket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
-import { useState } from 'react';
+import toast from 'react-hot-toast';
 
 export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    company: ''
+  });
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (formData.password !== formData.confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+    
     setIsLoading(true);
-    // Simulate loading
-    setTimeout(() => {
+    
+    try {
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          company: formData.company
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Account created! Signing you in...');
+        
+        // Auto sign in after successful signup
+        const result = await signIn('credentials', {
+          email: formData.email,
+          password: formData.password,
+          redirect: false,
+        });
+
+        if (result?.error) {
+          toast.error('Account created but sign in failed. Please try logging in.');
+          router.push('/auth/login');
+        } else {
+          router.push('/dashboard');
+        }
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to create account');
+      }
+    } catch (error) {
+      toast.error('Something went wrong');
+    } finally {
       setIsLoading(false);
-      // Redirect to dashboard
-      window.location.href = '/dashboard';
-    }, 2000);
+    }
+  };
+
+  const updateFormData = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -62,6 +115,8 @@ export default function SignupPage() {
                 <Input
                   id="name"
                   type="text"
+                  value={formData.name}
+                  onChange={(e) => updateFormData('name', e.target.value)}
                   placeholder="Enter your full name"
                   className="pl-10 glassmorphism-dark border-white/20"
                   required
@@ -76,6 +131,8 @@ export default function SignupPage() {
                 <Input
                   id="email"
                   type="email"
+                  value={formData.email}
+                  onChange={(e) => updateFormData('email', e.target.value)}
                   placeholder="Enter your email"
                   className="pl-10 glassmorphism-dark border-white/20"
                   required
@@ -90,9 +147,42 @@ export default function SignupPage() {
                 <Input
                   id="password"
                   type="password"
+                  value={formData.password}
+                  onChange={(e) => updateFormData('password', e.target.value)}
                   placeholder="Create a password"
                   className="pl-10 glassmorphism-dark border-white/20"
                   required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirm Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={formData.confirmPassword}
+                  onChange={(e) => updateFormData('confirmPassword', e.target.value)}
+                  placeholder="Confirm your password"
+                  className="pl-10 glassmorphism-dark border-white/20"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="company" className="text-sm font-medium">Company (Optional)</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="company"
+                  type="text"
+                  value={formData.company}
+                  onChange={(e) => updateFormData('company', e.target.value)}
+                  placeholder="Your company name"
+                  className="pl-10 glassmorphism-dark border-white/20"
                 />
               </div>
             </div>

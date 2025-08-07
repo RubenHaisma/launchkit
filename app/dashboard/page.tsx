@@ -187,7 +187,6 @@ export default function DashboardHome() {
 
   const activeCampaigns = campaigns.filter(c => c.status === 'active' || c.status === 'scheduled');
   const recentNotifications = notifications.slice(0, 4);
-  }, []);
 
   if (loading) {
     return (

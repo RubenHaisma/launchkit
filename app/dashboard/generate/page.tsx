@@ -25,6 +25,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDashboardStore } from '@/lib/store/dashboard-store';
+import { fakeGenerate } from '@/lib/fakeGenerate';
 import toast from 'react-hot-toast';
 
 const contentTypes = [
@@ -92,39 +93,22 @@ export default function GeneratePage() {
     setIsGenerating(true);
     
     try {
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: prompt.trim(),
-          type: selectedType,
-          tone,
-          audience,
-        }),
+      const result = await fakeGenerate(prompt.trim(), selectedType, tone, audience);
+      
+      addGeneratedContent({
+        type: selectedType as any,
+        content: result.content,
+        prompt: prompt.trim(),
+        tone,
+        audience,
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        addGeneratedContent({
-          type: selectedType as any,
-          content: data.content,
-          prompt: prompt.trim(),
-          tone,
-          audience,
-        });
-        
-        toast.success('Content generated successfully! 🎉');
-        addNotification({
-          type: 'success',
-          title: 'Content Generated',
-          message: `New ${selectedType} content is ready to use`,
-        });
-      } else {
-        throw new Error(data.error || 'Failed to generate content');
-      }
+      
+      toast.success('Content generated successfully! 🎉');
+      addNotification({
+        type: 'success',
+        title: 'Content Generated',
+        message: `New ${selectedType} content is ready to use`,
+      });
     } catch (error) {
       console.error('Generation error:', error);
       toast.error('Failed to generate content. Please try again.');
@@ -388,30 +372,14 @@ export default function GeneratePage() {
                           <span className="text-xs text-muted-foreground">
                             {new Date(content.createdAt).toLocaleString()}
                           </span>
-                          <div className="flex items-center space-x-2">
-                            {content.type === 'tweet' && (
-                              <Button
-                                size="sm"
-                                onClick={() => {
-                                  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(content.content)}`;
-                                  window.open(twitterUrl, '_blank');
-                                  toast.success('🐦 Opened Twitter with your content!');
-                                }}
-                                className="bg-blue-500 hover:bg-blue-600 text-white"
-                              >
-                                <Twitter className="h-3 w-3 mr-1" />
-                                Post to X
-                              </Button>
-                            )}
-                            <Button
-                              size="sm"
-                              onClick={() => saveAsCampaign(content)}
-                              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
-                            >
-                              <Send className="h-3 w-3 mr-1" />
-                              Save
-                            </Button>
-                          </div>
+                          <Button
+                            size="sm"
+                            onClick={() => saveAsCampaign(content)}
+                            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+                          >
+                            <Send className="h-3 w-3 mr-1" />
+                            Use in Campaign
+                          </Button>
                         </div>
                       </>
                     )}

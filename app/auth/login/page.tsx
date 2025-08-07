@@ -1,25 +1,44 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { signIn, getSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, Mail, Lock, Rocket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
-import { useState } from 'react';
+import toast from 'react-hot-toast';
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState('demo@launchpilot.ai');
+  const [password, setPassword] = useState('password');
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate loading
-    setTimeout(() => {
+    
+    try {
+      const result = await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        toast.error('Invalid credentials');
+      } else {
+        toast.success('Welcome back!');
+        router.push('/dashboard');
+      }
+    } catch (error) {
+      toast.error('Something went wrong');
+    } finally {
       setIsLoading(false);
-      // Redirect to dashboard
-      window.location.href = '/dashboard';
-    }, 2000);
+    }
   };
 
   return (
@@ -62,6 +81,8 @@ export default function LoginPage() {
                 <Input
                   id="email"
                   type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
                   className="pl-10 glassmorphism-dark border-white/20"
                   required
@@ -76,6 +97,8 @@ export default function LoginPage() {
                 <Input
                   id="password"
                   type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   className="pl-10 glassmorphism-dark border-white/20"
                   required
@@ -116,6 +139,12 @@ export default function LoginPage() {
               <Link href="/auth/signup" className="text-purple-400 hover:text-purple-300 font-medium">
                 Sign up for free
               </Link>
+            </div>
+            
+            <div className="text-xs text-muted-foreground mb-4 p-3 glassmorphism-dark rounded-lg">
+              <strong>Demo Credentials:</strong><br />
+              Email: demo@launchpilot.ai<br />
+              Password: password
             </div>
             
             <Link href="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">

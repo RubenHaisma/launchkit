@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession, signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Home, 
@@ -15,20 +17,28 @@ import {
   Bell,
   Zap,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  LogOut,
+  User,
+  Calendar,
+  History,
+  Rocket
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDashboardStore } from '@/lib/store/dashboard-store';
-import { Toaster } from 'react-hot-toast';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 const sidebarItems = [
   { icon: Home, label: 'Home', href: '/dashboard', id: 'home' },
   { icon: PenTool, label: 'Generate', href: '/dashboard/generate', id: 'generate' },
-  { icon: Mail, label: 'Outreach', href: '/dashboard/outreach', id: 'outreach' },
   { icon: Twitter, label: 'Twitter', href: '/dashboard/twitter', id: 'twitter' },
+  { icon: Mail, label: 'Outreach', href: '/dashboard/outreach', id: 'outreach' },
   { icon: FileText, label: 'Email Campaigns', href: '/dashboard/email-campaigns', id: 'email' },
+  { icon: History, label: 'History', href: '/dashboard/history', id: 'history' },
+  { icon: Rocket, label: 'Launch', href: '/dashboard/launch', id: 'launch' },
+  { icon: Calendar, label: 'Calendar', href: '/dashboard/calendar', id: 'calendar' },
   { icon: BarChart3, label: 'Analytics', href: '/dashboard/analytics', id: 'analytics' },
   { icon: Settings, label: 'Settings', href: '/dashboard/settings', id: 'settings' },
 ];
@@ -38,21 +48,63 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const pathname = usePathname();
   const { 
     sidebarCollapsed, 
     setSidebarCollapsed, 
     notifications, 
-    profile 
+    setProfile
   } = useDashboardStore();
   
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const unreadCount = notifications.filter(n => !n.read).length;
 
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (status === 'loading') return; // Still loading
+    if (!session) {
+      router.push('/auth/login');
+      return;
+    }
+    
+    // Update profile from session
+    if (session.user) {
+      setProfile({
+        name: session.user.name || 'User',
+        email: session.user.email || '',
+        company: (session.user as any).company || '',
+        industry: 'productivity'
+      });
+    }
+  }, [session, status, router, setProfile]);
+
   // Close mobile menu when route changes
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [pathname]);
+
+  const handleLogout = async () => {
+    await signOut({ redirect: false });
+    toast.success('Logged out successfully');
+    router.push('/');
+  };
+
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return null; // Will redirect
+  }
 
   const sidebarVariants = {
     expanded: { width: 256 },
@@ -66,17 +118,6 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-background flex">
-      <Toaster 
-        position="top-right"
-        toastOptions={{
-          className: 'glassmorphism-dark border border-white/20',
-          style: {
-            background: 'rgba(0, 0, 0, 0.8)',
-            color: 'white',
-            backdropFilter: 'blur(12px)',
-          },
-        }}
-      />
 
       {/* Mobile Backdrop */}
       <AnimatePresence>
@@ -236,13 +277,24 @@ export default function DashboardLayout({
             {/* Welcome Message */}
             <div className="hidden lg:block">
               <h1 className="text-2xl font-bold font-sora">
-                Good morning, {profile.name.split(' ')[0]}! 👋
+                Good morning, {session.user.name?.split(' ')[0]}! 👋
               </h1>
               <p className="text-muted-foreground">Ready to launch something amazing today?</p>
             </div>
 
             {/* Header Actions */}
             <div className="flex items-center space-x-4">
+              {/* User Menu */}
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+                  <User className="h-4 w-4 text-white" />
+                </div>
+                <div className="hidden md:block">
+                  <div className="text-sm font-medium">{session.user.name}</div>
+                  <div className="text-xs text-muted-foreground">{session.user.email}</div>
+                </div>
+              </div>
+              
               <Button size="sm" variant="outline" className="glassmorphism relative">
                 <Bell className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Notifications</span>
@@ -252,6 +304,17 @@ export default function DashboardLayout({
                   </span>
                 )}
               </Button>
+              
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={handleLogout}
+                className="glassmorphism text-red-400 hover:text-red-300"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Logout</span>
+              </Button>
+              
               <Link href="/dashboard/generate">
                 <Button size="sm" className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white">
                   <PenTool className="h-4 w-4 mr-2" />

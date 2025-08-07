@@ -25,7 +25,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDashboardStore } from '@/lib/store/dashboard-store';
-import { fakeGenerate } from '@/lib/fakeGenerate';
+import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
 
 const contentTypes = [
@@ -68,6 +68,7 @@ const audiences = [
 ];
 
 export default function GeneratePage() {
+  const { data: session } = useSession();
   const { 
     generatedContent, 
     addGeneratedContent, 
@@ -93,7 +94,26 @@ export default function GeneratePage() {
     setIsGenerating(true);
     
     try {
-      const result = await fakeGenerate(prompt.trim(), selectedType, tone, audience);
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: prompt.trim(),
+          type: selectedType,
+          tone,
+          audience,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        if (result.code === 'INSUFFICIENT_CREDITS') {
+          toast.error('Insufficient credits! Please upgrade your plan.');
+          return;
+        }
+        throw new Error(result.error || 'Failed to generate content');
+      }
       
       addGeneratedContent({
         type: selectedType as any,

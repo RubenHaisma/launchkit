@@ -22,10 +22,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { useDashboardStore } from '@/lib/store/dashboard-store';
 import { useTheme } from 'next-themes';
+import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
 
 const settingsSections = [
   { id: 'profile', label: 'Profile', icon: User },
+  { id: 'billing', label: 'Billing', icon: Key },
   { id: 'api', label: 'API Keys', icon: Key },
   { id: 'notifications', label: 'Notifications', icon: Bell },
   { id: 'appearance', label: 'Appearance', icon: Palette },
@@ -33,6 +35,7 @@ const settingsSections = [
 ];
 
 export default function SettingsPage() {
+  const { data: session } = useSession();
   const { profile, setProfile } = useDashboardStore();
   const { theme, setTheme } = useTheme();
   const [activeSection, setActiveSection] = useState('profile');
@@ -60,6 +63,25 @@ export default function SettingsPage() {
     const newApiKey = 'lp_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     setFormData({ ...formData, apiKey: newApiKey });
     toast.success('New API key generated!');
+  };
+
+  const handleManageBilling = async () => {
+    try {
+      const response = await fetch('/api/stripe/portal', {
+        method: 'POST',
+      });
+      
+      const data = await response.json();
+      
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        toast.error('Failed to open billing portal');
+      }
+    } catch (error) {
+      console.error('Billing portal error:', error);
+      toast.error('Something went wrong');
+    }
   };
 
   const renderSection = () => {
@@ -114,6 +136,60 @@ export default function SettingsPage() {
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'billing':
+        return (
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Billing & Subscription</h3>
+              <div className="space-y-4">
+                <div className="glassmorphism-dark rounded-lg p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h4 className="font-semibold text-lg">Current Plan</h4>
+                      <p className="text-muted-foreground">
+                        You are currently on the <span className="capitalize font-medium">{session?.user?.plan || 'free'}</span> plan
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold">
+                        {session?.user?.credits === 999999 ? 'Unlimited' : session?.user?.credits || 0}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Credits remaining</div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex space-x-3">
+                    <Button
+                      onClick={handleManageBilling}
+                      className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+                    >
+                      Manage Subscription
+                    </Button>
+                    <Link href="/pricing">
+                      <Button variant="outline" className="glassmorphism">
+                        View Plans
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+                
+                <div className="glassmorphism-dark rounded-lg p-4">
+                  <h4 className="font-semibold mb-2">Usage This Month</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>AI Generations:</span>
+                      <span>47 / {session?.user?.plan === 'growth' ? '∞' : session?.user?.plan === 'pro' ? '500' : '50'}</span>
+                    </div>
+                    <div className="w-full bg-gray-700 rounded-full h-2">
+                      <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full" style={{ width: '47%' }} />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

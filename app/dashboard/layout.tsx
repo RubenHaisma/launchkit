@@ -26,6 +26,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDashboardStore } from '@/lib/store/dashboard-store';
+import { CreditBadge } from '@/components/ui/credit-badge';
+import { PlanBadge } from '@/components/ui/plan-badge';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -284,6 +286,9 @@ export default function DashboardLayout({
 
             {/* Header Actions */}
             <div className="flex items-center space-x-4">
+              <CreditBadge />
+              <PlanBadge />
+              
               {/* User Menu */}
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">

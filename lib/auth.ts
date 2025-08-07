@@ -1,19 +1,11 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
+import { PrismaAdapter } from "@next-auth/prisma-adapter"
+import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 
-// Mock user database - replace with real database
-const users = [
-  {
-    id: "1",
-    email: "demo@launchpilot.ai",
-    password: "$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj3QJb9vKE4O", // "password"
-    name: "Demo User",
-    company: "LaunchPilot Demo"
-  }
-]
-
 export const authOptions: NextAuthOptions = {
+  adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -26,8 +18,15 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
-        const user = users.find(u => u.email === credentials.email)
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email }
+        })
+        
         if (!user) {
+          return null
+        }
+
+        if (!user.password) {
           return null
         }
 
@@ -40,7 +39,8 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           name: user.name,
-          company: user.company
+          plan: user.plan,
+          credits: user.credits
         }
       }
     })
@@ -55,14 +55,16 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.company = (user as any).company
+        token.plan = (user as any).plan
+        token.credits = (user as any).credits
       }
       return token
     },
     async session({ session, token }) {
       if (token) {
         session.user.id = token.sub!
-        session.user.company = token.company as string
+        session.user.plan = token.plan as string
+        session.user.credits = token.credits as number
       }
       return session
     }

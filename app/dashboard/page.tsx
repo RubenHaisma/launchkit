@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { useDashboardStore } from '@/lib/store/dashboard-store';
 import { todayStats, weeklyGrowth } from '@/lib/data/metrics';
 import { DashboardChart } from '@/components/dashboard/dashboard-chart';
+import { UpgradeBanner } from '@/components/ui/upgrade-banner';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 
@@ -201,6 +202,8 @@ export default function DashboardHome() {
 
   return (
     <div className="p-6 space-y-8 max-w-7xl mx-auto">
+      <UpgradeBanner />
+      
       {/* Stats Grid */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}

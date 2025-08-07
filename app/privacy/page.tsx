@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function PrivacyPage() {
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen bg-background">
       <Navigation />
       
       <section className="pt-32 pb-24 relative overflow-hidden">
@@ -17,9 +17,9 @@ export default function PrivacyPage() {
         
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center space-x-2 glassmorphism rounded-full px-4 py-2 mb-6">
+            <div className="inline-flex items-center space-x-2 glassmorphism-dark rounded-full px-4 py-2 mb-6 border border-purple-500/30">
               <Shield className="h-4 w-4 text-purple-400" />
-              <span className="text-sm font-medium">Privacy Policy</span>
+              <span className="text-sm font-medium text-white">Privacy Policy</span>
             </div>
             
             <h1 className="text-4xl md:text-6xl font-bold font-sora mb-6">

@@ -42,7 +42,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-background">
       {/* Background Effects */}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 via-blue-900/30 to-pink-900/30" />
       <div className="absolute top-1/4 -left-32 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl animate-pulse-slow" />
@@ -53,7 +53,7 @@ export default function LoginPage() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="glassmorphism rounded-2xl p-8 shadow-2xl"
+          className="glassmorphism-dark rounded-2xl p-8 shadow-2xl border border-white/20"
         >
           {/* Header */}
           <div className="text-center mb-8">

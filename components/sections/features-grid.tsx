@@ -74,7 +74,7 @@ const features = [
 export function FeaturesGrid() {
   return (
     <section className="py-24 relative">
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-blue-900/5 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-blue-900/10 to-transparent" />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div

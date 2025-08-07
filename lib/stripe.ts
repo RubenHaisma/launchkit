@@ -12,7 +12,8 @@ export const PLANS = {
     price: 0,
     credits: 50,
     features: [
-      '50 AI generations/month',
+      '50 tokens/month',
+      '~50 tweets or 10 blog posts',
       'Basic templates',
       'Community support',
       'Export to text',
@@ -25,8 +26,10 @@ export const PLANS = {
     priceId: process.env.STRIPE_PRO_PRICE_ID!,
     credits: 500,
     features: [
-      '500 AI generations/month',
+      '500 tokens/month',
+      '~500 tweets or 100 blog posts',
       'All templates & tools',
+      'Website scraping',
       'Priority support',
       'Advanced analytics',
       'Social media integration',
@@ -40,7 +43,8 @@ export const PLANS = {
     priceId: process.env.STRIPE_GROWTH_PRICE_ID!,
     credits: -1, // unlimited
     features: [
-      'Unlimited AI generations',
+      'Unlimited tokens',
+      'All premium features',
       'White-label reports',
       'Custom integrations',
       'Dedicated account manager',

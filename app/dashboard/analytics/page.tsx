@@ -25,7 +25,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
-import { mockMetrics, todayStats, weeklyGrowth } from '@/lib/data/metrics';
+// import { mockMetrics, todayStats, weeklyGrowth } from '@/lib/data/metrics'; // Removed - using real data
 import toast from 'react-hot-toast';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
@@ -48,16 +48,25 @@ export default function AnalyticsPage() {
   const [selectedChannel, setSelectedChannel] = useState('twitter');
   const [selectedTimeframe, setSelectedTimeframe] = useState('30d');
   const [loading, setLoading] = useState(false);
-  const [metrics, setMetrics] = useState(mockMetrics);
+  const [metrics, setMetrics] = useState<any>(null);
+  const [todayStats, setTodayStats] = useState<any>(null);
+  const [weeklyGrowth, setWeeklyGrowth] = useState<any>(null);
+
+  // Load data on mount and when timeframe changes
+  useEffect(() => {
+    refreshData();
+  }, [selectedTimeframe]);
 
   const refreshData = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/metrics?channel=${selectedChannel}&timeframe=${selectedTimeframe}`);
+      const response = await fetch(`/api/metrics?timeframe=${selectedTimeframe}`);
       const data = await response.json();
       
       if (data.metrics) {
         setMetrics(data.metrics);
+        setTodayStats(data.today);
+        setWeeklyGrowth(data.growth);
         toast.success('Analytics refreshed!');
       }
     } catch (error) {
@@ -72,9 +81,9 @@ export default function AnalyticsPage() {
     switch (channel) {
       case 'twitter':
         return [
-          { icon: Eye, label: 'Impressions', value: todayStats.twitter?.impressions?.toLocaleString() || '0', change: `+${weeklyGrowth.twitter?.impressions || 0}%`, color: 'text-blue-400' },
-          { icon: Heart, label: 'Engagement', value: todayStats.twitter?.engagement?.toLocaleString() || '0', change: `+${weeklyGrowth.twitter?.engagement || 0}%`, color: 'text-red-400' },
-          { icon: Users, label: 'Followers', value: todayStats.twitter?.followers?.toLocaleString() || '0', change: `+${weeklyGrowth.twitter?.followers || 0}%`, color: 'text-green-400' },
+          { icon: Eye, label: 'Impressions', value: todayStats?.twitter?.impressions?.toLocaleString() || '0', change: `+${weeklyGrowth?.twitter?.impressions || 0}%`, color: 'text-blue-400' },
+          { icon: Heart, label: 'Engagement', value: todayStats?.twitter?.engagement?.toLocaleString() || '0', change: `+${weeklyGrowth?.twitter?.engagement || 0}%`, color: 'text-red-400' },
+          { icon: Users, label: 'Followers', value: todayStats?.twitter?.followers?.toLocaleString() || '0', change: `+${weeklyGrowth?.twitter?.followers || 0}%`, color: 'text-green-400' },
         ];
       case 'linkedin':
         return [
@@ -90,15 +99,15 @@ export default function AnalyticsPage() {
         ];
       case 'email':
         return [
-          { icon: Mail, label: 'Opens', value: todayStats.email?.opens?.toLocaleString() || '0', change: `+${weeklyGrowth.email?.opens || 0}%`, color: 'text-pink-400' },
-          { icon: MousePointer, label: 'Clicks', value: todayStats.email?.clicks?.toLocaleString() || '0', change: `+${weeklyGrowth.email?.clicks || 0}%`, color: 'text-purple-400' },
-          { icon: Users, label: 'Subscribers', value: todayStats.email?.subscribers?.toLocaleString() || '0', change: `+${weeklyGrowth.email?.subscribers || 0}%`, color: 'text-green-400' },
+          { icon: Mail, label: 'Opens', value: todayStats?.email?.opens?.toLocaleString() || '0', change: `+${weeklyGrowth?.email?.opens || 0}%`, color: 'text-pink-400' },
+          { icon: MousePointer, label: 'Clicks', value: todayStats?.email?.clicks?.toLocaleString() || '0', change: `+${weeklyGrowth?.email?.clicks || 0}%`, color: 'text-purple-400' },
+          { icon: Users, label: 'Subscribers', value: todayStats?.email?.subscribers?.toLocaleString() || '0', change: `+${weeklyGrowth?.email?.subscribers || 0}%`, color: 'text-green-400' },
         ];
       case 'blog':
         return [
-          { icon: Eye, label: 'Views', value: todayStats.blog?.views?.toLocaleString() || '0', change: `+${weeklyGrowth.blog?.views || 0}%`, color: 'text-green-400' },
-          { icon: MessageSquare, label: 'Shares', value: todayStats.blog?.shares?.toLocaleString() || '0', change: `+${weeklyGrowth.blog?.shares || 0}%`, color: 'text-blue-400' },
-          { icon: TrendingUp, label: 'Conversions', value: todayStats.blog?.conversions?.toLocaleString() || '0', change: `+${weeklyGrowth.blog?.conversions || 0}%`, color: 'text-purple-400' },
+          { icon: Eye, label: 'Views', value: todayStats?.blog?.views?.toLocaleString() || '0', change: `+${weeklyGrowth?.blog?.views || 0}%`, color: 'text-green-400' },
+          { icon: MessageSquare, label: 'Shares', value: todayStats?.blog?.shares?.toLocaleString() || '0', change: `+${weeklyGrowth?.blog?.shares || 0}%`, color: 'text-blue-400' },
+          { icon: TrendingUp, label: 'Conversions', value: todayStats?.blog?.conversions?.toLocaleString() || '0', change: `+${weeklyGrowth?.blog?.conversions || 0}%`, color: 'text-purple-400' },
         ];
       default:
         return [];
@@ -106,6 +115,7 @@ export default function AnalyticsPage() {
   };
 
   const getChartData = (channel: string) => {
+    if (!metrics) return null;
     const channelData = metrics[channel as keyof typeof metrics];
     if (!channelData) return null;
 
@@ -118,7 +128,7 @@ export default function AnalyticsPage() {
       
       return {
         label: key.charAt(0).toUpperCase() + key.slice(1),
-        data: data.map((d: any) => d.value),
+        data: (data as any[]).map((d: any) => d.value),
         borderColor: colors[index]?.border || 'rgb(168, 85, 247)',
         backgroundColor: colors[index]?.bg || 'rgba(168, 85, 247, 0.1)',
         fill: true,
@@ -170,18 +180,26 @@ export default function AnalyticsPage() {
         animate={{ opacity: 1, y: 0 }}
         className="flex items-center justify-between"
       >
-        <div>
-          <h1 className="text-3xl font-bold font-sora mb-2">
-            Marketing <span className="text-gradient">Analytics</span>
-          </h1>
-          <p className="text-muted-foreground">
-            Track your content performance across all channels
-          </p>
+        <div className="flex items-center space-x-4">
+          <motion.div 
+            className="p-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 shadow-lg neon-glow-blue"
+            whileHover={{ scale: 1.1, rotate: 5 }}
+          >
+            <BarChart3 className="h-8 w-8 text-white" />
+          </motion.div>
+          <div>
+            <h1 className="text-4xl font-bold font-sora mb-2 text-gradient-premium">
+              Marketing Analytics
+            </h1>
+            <p className="text-muted-foreground text-lg">
+              Track your content performance across all channels
+            </p>
+          </div>
         </div>
         
         <div className="flex items-center space-x-4">
           <Select value={selectedTimeframe} onValueChange={setSelectedTimeframe}>
-            <SelectTrigger className="glassmorphism-dark border-white/20 w-40">
+            <SelectTrigger className="glassmorphism-dark border-white/20 w-40 hover:scale-105 transition-all duration-300">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -197,7 +215,7 @@ export default function AnalyticsPage() {
             onClick={refreshData}
             disabled={loading}
             variant="outline"
-            className="glassmorphism"
+            className="glassmorphism hover:scale-105 transition-all duration-300"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -212,20 +230,29 @@ export default function AnalyticsPage() {
         transition={{ delay: 0.1 }}
         className="flex justify-center"
       >
-        <div className="glassmorphism rounded-lg p-1 flex">
+        <div className="glassmorphism-elevated rounded-2xl p-2 flex space-x-2">
           {channels.map((channel) => (
-            <button
+            <motion.button
               key={channel.id}
               onClick={() => setSelectedChannel(channel.id)}
-              className={`flex items-center space-x-2 px-6 py-3 rounded-lg transition-all ${
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className={`relative flex items-center space-x-3 px-6 py-4 rounded-xl transition-all ${
                 selectedChannel === channel.id 
-                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' 
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? `bg-gradient-to-r ${channel.color} text-white shadow-lg` 
+                  : 'text-muted-foreground hover:text-white hover:bg-white/10'
               }`}
             >
-              <channel.icon className="h-4 w-4" />
-              <span>{channel.label}</span>
-            </button>
+              {selectedChannel === channel.id && (
+                <motion.div
+                  layoutId="channelActiveTab"
+                  className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl border border-purple-500/30"
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                />
+              )}
+              <channel.icon className="h-5 w-5 relative z-10" />
+              <span className="font-semibold relative z-10">{channel.label}</span>
+            </motion.button>
           ))}
         </div>
       </motion.div>
@@ -243,16 +270,28 @@ export default function AnalyticsPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 + index * 0.1 }}
-            className="glassmorphism rounded-xl p-6 hover-lift"
+            whileHover={{ y: -8 }}
+            className="card-premium group cursor-pointer"
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className={`p-2 rounded-lg bg-gradient-to-r ${selectedChannelData?.color}`}>
-                <stat.icon className="h-5 w-5 text-white" />
+            <div className="flex items-center justify-between mb-6">
+              <motion.div 
+                className={`p-3 rounded-xl bg-gradient-to-r ${selectedChannelData?.color} shadow-lg group-hover:shadow-xl transition-all duration-300`}
+                whileHover={{ scale: 1.1, rotate: 5 }}
+              >
+                <stat.icon className="h-6 w-6 text-white" />
+              </motion.div>
+              <div className={`text-sm font-bold px-3 py-1 rounded-full bg-gradient-to-r ${
+                stat.color === 'text-green-400' ? 'from-green-500/20 to-emerald-500/20 text-green-400' :
+                stat.color === 'text-blue-400' ? 'from-blue-500/20 to-cyan-500/20 text-blue-400' :
+                stat.color === 'text-red-400' ? 'from-red-500/20 to-rose-500/20 text-red-400' :
+                'from-purple-500/20 to-violet-500/20 text-purple-400'
+              }`}>
+                {stat.change}
               </div>
-              <span className={`text-sm font-medium ${stat.color}`}>{stat.change}</span>
             </div>
-            <div className="text-2xl font-bold font-sora mb-1">{stat.value}</div>
-            <div className="text-sm text-muted-foreground">{stat.label}</div>
+            <div className="text-3xl font-bold font-sora mb-2 text-gradient-premium">{stat.value}</div>
+            <div className="text-sm text-muted-foreground font-medium">{stat.label}</div>
+            <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-purple-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </motion.div>
         ))}
       </motion.div>
@@ -262,28 +301,39 @@ export default function AnalyticsPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="glassmorphism rounded-xl p-6"
+        className="card-premium"
       >
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold font-sora">
-            {selectedChannelData?.label} Performance
-          </h3>
-          <div className="text-sm text-green-400">
-            ↗ +{(() => {
-              const channelData = weeklyGrowth[selectedChannel as keyof typeof weeklyGrowth];
-              if (!channelData) return 0;
-              
-              switch (selectedChannel) {
-                case 'twitter':
-                  return (channelData as any).impressions || 0;
-                case 'email':
-                  return (channelData as any).opens || 0;
-                case 'blog':
-                  return (channelData as any).views || 0;
-                default:
-                  return 0;
-              }
-            })()}% this week
+          <div className="flex items-center space-x-3">
+            <motion.div 
+              className={`p-2 rounded-lg bg-gradient-to-r ${selectedChannelData?.color} shadow-lg`}
+              whileHover={{ scale: 1.1 }}
+            >
+              <BarChart3 className="h-5 w-5 text-white" />
+            </motion.div>
+            <h3 className="text-xl font-bold font-sora text-gradient-premium">
+              {selectedChannelData?.label} Performance
+            </h3>
+          </div>
+          <div className="glassmorphism-dark px-4 py-2 rounded-full">
+            <div className="text-sm text-green-400 font-semibold flex items-center space-x-1">
+              <TrendingUp className="h-4 w-4" />
+              <span>+{(() => {
+                const channelData = weeklyGrowth?.[selectedChannel as keyof typeof weeklyGrowth];
+                if (!channelData) return 0;
+                
+                switch (selectedChannel) {
+                  case 'twitter':
+                    return (channelData as any).impressions || 0;
+                  case 'email':
+                    return (channelData as any).opens || 0;
+                  case 'blog':
+                    return (channelData as any).views || 0;
+                  default:
+                    return 0;
+                }
+              })()}% this week</span>
+            </div>
           </div>
         </div>
         
@@ -309,8 +359,16 @@ export default function AnalyticsPage() {
         className="grid grid-cols-1 lg:grid-cols-2 gap-8"
       >
         {/* Top Performing Content */}
-        <div className="glassmorphism rounded-xl p-6">
-          <h3 className="text-lg font-bold font-sora mb-4">Top Performing Content</h3>
+        <div className="card-premium">
+          <div className="flex items-center space-x-3 mb-6">
+            <motion.div 
+              className="p-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 shadow-lg"
+              whileHover={{ scale: 1.1 }}
+            >
+              <TrendingUp className="h-5 w-5 text-white" />
+            </motion.div>
+            <h3 className="text-lg font-bold font-sora text-gradient-premium">Top Performing Content</h3>
+          </div>
           <div className="space-y-4">
             {[
               { title: 'How to build a SaaS in 30 days', metric: '2.4K views', type: 'blog', performance: 'high' },
@@ -341,10 +399,15 @@ export default function AnalyticsPage() {
         </div>
 
         {/* AI-Powered Insights */}
-        <div className="glassmorphism rounded-xl p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="h-5 w-5 text-purple-400" />
-            <h3 className="text-lg font-bold font-sora">AI Insights</h3>
+        <div className="card-premium">
+          <div className="flex items-center gap-3 mb-6">
+            <motion.div 
+              className="p-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 shadow-lg pulse-glow"
+              whileHover={{ scale: 1.1, rotate: 5 }}
+            >
+              <Sparkles className="h-5 w-5 text-white" />
+            </motion.div>
+            <h3 className="text-lg font-bold font-sora text-gradient-premium">AI Insights</h3>
           </div>
           <div className="space-y-4">
             {[
@@ -413,7 +476,33 @@ export default function AnalyticsPage() {
                   }`}>
                     {insight.type}
                   </span>
-                  <Button size="sm" variant="outline" className="glassmorphism text-xs h-6">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="glassmorphism text-xs h-6"
+                    onClick={() => {
+                      // Implement action based on insight type
+                      switch (insight.type) {
+                        case 'prediction':
+                          toast.success('Content prediction details coming soon!');
+                          break;
+                        case 'timing':
+                          // Auto-schedule content at optimal time
+                          window.location.href = '/dashboard/calendar';
+                          break;
+                        case 'content':
+                          // Generate content ideas
+                          window.location.href = '/dashboard/generate';
+                          break;
+                        case 'strategy':
+                          // Create visual content
+                          window.location.href = '/dashboard/visual-content';
+                          break;
+                        default:
+                          toast('Feature coming soon!');
+                      }
+                    }}
+                  >
                     {insight.action}
                   </Button>
                 </div>

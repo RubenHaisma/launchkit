@@ -56,13 +56,13 @@ export default function PricingPage() {
     {
       name: 'Growth',
       description: 'For growing businesses',
-      price: { monthly: 50, annual: 40 },
-      credits: 1500,
+      price: { monthly: 79, annual: 63 },
+      credits: 999999, // Unlimited
       icon: Crown,
       color: 'from-yellow-500 to-orange-500',
       features: [
         'Everything in Pro',
-        '1,500 generations/month',
+        'Unlimited generations',
         'Multi-platform automation',
         'Team collaboration',
         'Advanced analytics',
@@ -77,7 +77,7 @@ export default function PricingPage() {
   const faqs = [
     {
       question: 'What counts as a generation?',
-      answer: 'Each piece of content created by AI counts as one generation. This includes tweets, emails, blog posts, etc.'
+      answer: 'Each piece of content created by AI uses tokens based on complexity: Tweets (1 token), LinkedIn posts (2 tokens), Blog posts (5 tokens), Website scraping (10 tokens), etc.'
     },
     {
       question: 'Can I change plans anytime?',
@@ -94,7 +94,7 @@ export default function PricingPage() {
   ];
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen bg-background">
       <Navigation />
       
       <section className="pt-32 pb-24 relative overflow-hidden">

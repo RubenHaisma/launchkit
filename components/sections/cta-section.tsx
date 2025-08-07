@@ -18,9 +18,9 @@ export function CTASection() {
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
         >
-          <div className="inline-flex items-center space-x-2 glassmorphism rounded-full px-4 py-2 mb-6">
+          <div className="inline-flex items-center space-x-2 glassmorphism-dark rounded-full px-4 py-2 mb-6 border border-purple-500/30">
             <Sparkles className="h-4 w-4 text-purple-400" />
-            <span className="text-sm font-medium">Ready to Launch?</span>
+            <span className="text-sm font-medium text-white">Ready to Launch?</span>
           </div>
           
           <h2 className="text-3xl md:text-5xl font-bold font-sora mb-6">
@@ -42,7 +42,7 @@ export function CTASection() {
               </Button>
             </Link>
             <Link href="/pricing">
-              <Button size="lg" variant="outline" className="text-lg px-8 py-4 glassmorphism hover-lift">
+              <Button size="lg" variant="outline" className="text-lg px-8 py-4 glassmorphism-dark hover-lift border-white/20 text-white">
                 View Pricing
               </Button>
             </Link>

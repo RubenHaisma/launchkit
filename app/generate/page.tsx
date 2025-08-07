@@ -238,7 +238,7 @@ Ready to hunt! 🦄`
   const selectedTypeData = contentTypes.find(type => type.id === selectedType);
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen bg-background">
       <Navigation />
       
       <section className="pt-32 pb-24 relative overflow-hidden">

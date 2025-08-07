@@ -428,7 +428,9 @@ export default function CalendarPage() {
                             const selectedDate = new Date(newEvent.scheduledFor);
                             const smartTime = getSmartTimeForType(newEvent.type, selectedDate);
                             setNewEvent(prev => ({ ...prev, time: smartTime }));
-                            toast.success('Optimal time suggested!');
+                            toast.success(`Optimal time for ${newEvent.type}: ${smartTime}`);
+                          } else {
+                            toast.error('Please select a date first');
                           }
                         }}
                         className="text-xs text-purple-400 hover:text-purple-300"

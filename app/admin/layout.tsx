@@ -49,14 +49,28 @@ export default function AdminLayout({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    if (status === 'loading') return;
-    if (!session) {
-      router.push('/auth/login');
-      return;
-    }
-    
-    // TODO: Check if user is admin
-    // For now, we'll assume any logged-in user can access admin
+    const checkAdminAccess = async () => {
+      if (status === 'loading') return;
+      if (!session) {
+        router.push('/auth/login');
+        return;
+      }
+      
+      // Check if user is admin
+      try {
+        const response = await fetch('/api/admin/stats');
+        if (response.status === 403) {
+          // User is not admin, redirect to main dashboard
+          router.push('/dashboard');
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking admin access:', error);
+        router.push('/dashboard');
+      }
+    };
+
+    checkAdminAccess();
   }, [session, status, router]);
 
   useEffect(() => {
@@ -84,15 +98,7 @@ export default function AdminLayout({
     return null;
   }
 
-  const sidebarVariants = {
-    expanded: { width: 256 },
-    collapsed: { width: 80 },
-  };
 
-  const contentVariants = {
-    expanded: { marginLeft: 256 },
-    collapsed: { marginLeft: 80 },
-  };
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -110,13 +116,12 @@ export default function AdminLayout({
       </AnimatePresence>
 
       {/* Admin Sidebar */}
-      <motion.div
-        variants={sidebarVariants}
-        animate={sidebarCollapsed ? 'collapsed' : 'expanded'}
-        transition={{ duration: 0.3, ease: 'easeInOut' }}
-        className={`fixed left-0 top-0 h-full glassmorphism-dark border-r border-white/10 z-50 flex flex-col ${
-          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        } transition-transform duration-300`}
+      <div
+        className={`h-screen glassmorphism-dark border-r border-white/10 z-50 flex flex-col transition-all duration-300 ease-in-out ${
+          sidebarCollapsed ? 'w-20' : 'w-64'
+        } ${
+          mobileMenuOpen ? 'fixed translate-x-0' : 'fixed -translate-x-full lg:relative lg:translate-x-0'
+        }`}
       >
         {/* Sidebar Header */}
         <div className="p-6 border-b border-white/10 flex items-center justify-between">
@@ -126,14 +131,21 @@ export default function AdminLayout({
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="flex items-center space-x-2"
+                className="flex items-center space-x-3"
               >
-                <div className="p-2 rounded-lg bg-gradient-to-br from-red-500 to-orange-500">
+                <motion.div 
+                  className="p-3 rounded-xl bg-gradient-to-br from-red-500 to-orange-500 shadow-lg neon-glow"
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
                   <Shield className="h-6 w-6 text-white" />
+                </motion.div>
+                <div>
+                  <span className="text-xl font-bold font-sora text-gradient-premium">
+                    Admin Panel
+                  </span>
+                  <div className="text-xs text-muted-foreground font-medium">System Control</div>
                 </div>
-                <span className="text-xl font-bold font-sora text-gradient-red">
-                  Admin Panel
-                </span>
               </motion.div>
             )}
           </AnimatePresence>
@@ -174,22 +186,38 @@ export default function AdminLayout({
                 <li key={item.id}>
                   <Link href={item.href}>
                     <motion.div
-                      whileHover={{ scale: 1.02 }}
+                      whileHover={{ scale: 1.02, x: 4 }}
                       whileTap={{ scale: 0.98 }}
-                      className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all cursor-pointer ${
+                      className={`relative flex items-center space-x-3 px-4 py-3 rounded-xl transition-all cursor-pointer group ${
                         isActive 
-                          ? 'bg-gradient-to-r from-red-500/20 to-orange-500/20 border border-red-500/30 text-red-400' 
-                          : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
+                          ? 'bg-gradient-to-r from-red-500/20 to-orange-500/20 border border-red-500/30 text-white shadow-lg' 
+                          : 'text-muted-foreground hover:text-white hover:bg-white/5'
                       }`}
                     >
-                      <item.icon className="h-5 w-5 flex-shrink-0" />
+                      {isActive && (
+                        <motion.div
+                          layoutId="adminActiveTab"
+                          className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-red-500 to-orange-500 rounded-r-full"
+                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                        />
+                      )}
+                      <motion.div
+                        className={`p-2 rounded-lg transition-all ${
+                          isActive 
+                            ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg' 
+                            : 'group-hover:bg-white/10'
+                        }`}
+                        whileHover={{ scale: 1.1 }}
+                      >
+                        <item.icon className="h-5 w-5 flex-shrink-0" />
+                      </motion.div>
                       <AnimatePresence>
                         {!sidebarCollapsed && (
                           <motion.span
                             initial={{ opacity: 0, width: 0 }}
                             animate={{ opacity: 1, width: 'auto' }}
                             exit={{ opacity: 0, width: 0 }}
-                            className="font-medium whitespace-nowrap"
+                            className="font-semibold whitespace-nowrap"
                           >
                             {item.label}
                           </motion.span>
@@ -224,15 +252,10 @@ export default function AdminLayout({
             </motion.div>
           )}
         </AnimatePresence>
-      </motion.div>
+      </div>
 
       {/* Main Content */}
-      <motion.div
-        variants={contentVariants}
-        animate={sidebarCollapsed ? 'collapsed' : 'expanded'}
-        transition={{ duration: 0.3, ease: 'easeInOut' }}
-        className="flex-1 flex flex-col min-h-screen lg:ml-0 ml-0"
-      >
+      <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
         {/* Header */}
         <motion.header
           initial={{ y: -50 }}
@@ -252,26 +275,38 @@ export default function AdminLayout({
 
             {/* Admin Welcome */}
             <div className="hidden lg:block">
-              <h1 className="text-2xl font-bold font-sora text-red-400">
-                Admin Dashboard
-              </h1>
-              <p className="text-muted-foreground">System monitoring and management</p>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <h1 className="text-2xl font-bold font-sora text-gradient-premium">
+                  Admin Dashboard
+                </h1>
+                <p className="text-muted-foreground font-medium">System monitoring and management</p>
+              </motion.div>
             </div>
 
             {/* Header Actions */}
             <div className="flex items-center space-x-4">
               {/* User Menu */}
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-red-500 to-orange-500 flex items-center justify-center">
-                  <User className="h-4 w-4 text-white" />
-                </div>
+              <motion.div 
+                className="flex items-center space-x-3 glassmorphism-dark px-3 py-2 rounded-xl"
+                whileHover={{ scale: 1.02 }}
+              >
+                <motion.div 
+                  className="w-10 h-10 rounded-full bg-gradient-to-r from-red-500 to-orange-500 flex items-center justify-center shadow-lg"
+                  whileHover={{ scale: 1.1 }}
+                >
+                  <User className="h-5 w-5 text-white" />
+                </motion.div>
                 <div className="hidden md:block">
-                  <div className="text-sm font-medium">{session.user?.name}</div>
+                  <div className="text-sm font-semibold text-white">{session.user?.name}</div>
                   <div className="text-xs text-muted-foreground">{session.user?.email}</div>
                 </div>
-              </div>
+              </motion.div>
               
-              <Button size="sm" variant="outline" className="glassmorphism relative">
+              <Button size="sm" variant="outline" className="glassmorphism hover:scale-105 transition-all duration-300">
                 <Bell className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Alerts</span>
               </Button>
@@ -280,14 +315,14 @@ export default function AdminLayout({
                 size="sm" 
                 variant="outline" 
                 onClick={handleLogout}
-                className="glassmorphism text-red-400 hover:text-red-300"
+                className="glassmorphism text-red-400 hover:text-red-300 hover:scale-105 transition-all duration-300"
               >
                 <LogOut className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Logout</span>
               </Button>
               
               <Link href="/dashboard">
-                <Button size="sm" className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white">
+                <Button size="sm" variant="premium" className="hover:scale-105 transition-all duration-300 shadow-lg">
                   <User className="h-4 w-4 mr-2" />
                   <span className="hidden sm:inline">User Dashboard</span>
                 </Button>
@@ -311,7 +346,7 @@ export default function AdminLayout({
             </motion.div>
           </AnimatePresence>
         </main>
-      </motion.div>
+      </div>
     </div>
   );
 }

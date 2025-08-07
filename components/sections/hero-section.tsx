@@ -21,9 +21,9 @@ export function HeroSection() {
           transition={{ duration: 0.8 }}
           className="mb-8"
         >
-          <div className="inline-flex items-center space-x-2 glassmorphism rounded-full px-4 py-2 mb-6">
+          <div className="inline-flex items-center space-x-2 glassmorphism-dark rounded-full px-4 py-2 mb-6 border border-purple-500/30">
             <Sparkles className="h-4 w-4 text-purple-400" />
-            <span className="text-sm font-medium">🚀 AI-Powered Marketing Revolution</span>
+            <span className="text-sm font-medium text-white">AI-Powered Marketing Revolution</span>
           </div>
           
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold font-sora leading-tight mb-6">
@@ -56,7 +56,7 @@ export function HeroSection() {
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </Link>
-          <Button size="lg" variant="outline" className="text-lg px-8 py-4 glassmorphism hover-lift">
+          <Button size="lg" variant="outline" className="text-lg px-8 py-4 glassmorphism-dark hover-lift border-white/20 text-white">
             <Play className="mr-2 h-5 w-5" />
             Watch Demo
           </Button>

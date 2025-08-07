@@ -15,7 +15,7 @@ const tools = [
 export function ReplacementTools() {
   return (
     <section className="py-24 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-900/5 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-900/10 to-transparent" />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <motion.div
@@ -53,7 +53,7 @@ export function ReplacementTools() {
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
                   viewport={{ once: true }}
-                  className="glassmorphism rounded-lg p-4 flex items-center justify-between"
+                  className="glassmorphism-dark rounded-lg p-4 flex items-center justify-between border border-white/10"
                 >
                   <div className="flex items-center space-x-3">
                     <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${tool.color}`} />
@@ -77,7 +77,7 @@ export function ReplacementTools() {
             className="md:col-span-1 flex items-center justify-center"
           >
             <div className="flex flex-col items-center space-y-4">
-              <div className="p-4 glassmorphism rounded-full">
+              <div className="p-4 glassmorphism-dark rounded-full border border-white/20">
                 <ArrowRight className="h-8 w-8 text-purple-400" />
               </div>
               <div className="text-center">
@@ -96,7 +96,7 @@ export function ReplacementTools() {
             className="md:col-span-1"
           >
             <h3 className="text-2xl font-bold mb-6 text-green-400">After: $29/month</h3>
-            <div className="glassmorphism rounded-lg p-6 border-2 border-purple-500/50 neon-glow">
+            <div className="glassmorphism-dark rounded-lg p-6 border-2 border-purple-500/50 neon-glow">
               <div className="text-center">
                 <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
                   <span className="text-2xl font-bold text-white">LP</span>

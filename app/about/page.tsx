@@ -14,7 +14,7 @@ const timeline = [
 
 export default function AboutPage() {
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen bg-background">
       <Navigation />
       
       <section className="pt-32 pb-24 relative overflow-hidden">

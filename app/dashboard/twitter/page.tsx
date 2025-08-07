@@ -23,6 +23,8 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useTokens } from '@/hooks/use-tokens';
+import toast from 'react-hot-toast';
 
 export default function TwitterPage() {
   const [tweetContent, setTweetContent] = useState('');
@@ -32,9 +34,17 @@ export default function TwitterPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedTweets, setGeneratedTweets] = useState<string[]>([]);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const { canUse, getTokenCost } = useTokens();
 
   const generateTweets = async () => {
     if (!aiTopic.trim()) return;
+    
+    // Check if user can afford the tokens
+    const tokensRequired = getTokenCost('tweet', 3);
+    if (!canUse('tweet', 3)) {
+      toast.error(`You need ${tokensRequired} tokens to generate 3 tweets. Please upgrade your plan.`);
+      return;
+    }
     
     setIsGenerating(true);
     try {
@@ -49,12 +59,21 @@ export default function TwitterPage() {
         })
       });
       
+      const data = await response.json();
+      
       if (response.ok) {
-        const data = await response.json();
         setGeneratedTweets(data.content || []);
+        toast.success(`Generated 3 tweets! Used ${tokensRequired} tokens.`);
+      } else {
+        if (data.code === 'INSUFFICIENT_CREDITS') {
+          toast.error('Insufficient tokens! Please upgrade your plan.');
+        } else {
+          toast.error(data.error || 'Failed to generate tweets');
+        }
       }
     } catch (error) {
       console.error('Error generating tweets:', error);
+      toast.error('Failed to generate tweets');
     } finally {
       setIsGenerating(false);
     }
@@ -177,7 +196,7 @@ export default function TwitterPage() {
 
         <Button 
           onClick={generateTweets}
-          disabled={!aiTopic.trim() || isGenerating}
+          disabled={!aiTopic.trim() || isGenerating || !canUse('tweet', 3)}
           className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 w-full mb-6"
         >
           {isGenerating ? (
@@ -185,7 +204,7 @@ export default function TwitterPage() {
           ) : (
             <Sparkles className="h-4 w-4 mr-2" />
           )}
-          {isGenerating ? 'Generating Tweets...' : 'Generate AI Tweets'}
+          {isGenerating ? 'Generating Tweets...' : `Generate AI Tweets (${getTokenCost('tweet', 3)} tokens)`}
         </Button>
 
         {generatedTweets.length > 0 && (

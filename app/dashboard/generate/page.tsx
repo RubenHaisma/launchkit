@@ -28,6 +28,8 @@ import { Badge } from '@/components/ui/badge';
 import { useDashboardStore } from '@/lib/store/dashboard-store';
 import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
+import { useTokens } from '@/hooks/use-tokens';
+import { TokenCostDisplay } from '@/components/ui/token-cost-display';
 import TwitterThreadDisplay from '@/components/ui/twitter-thread-display';
 import { formatAsTwitterThread } from '@/lib/ai';
 import { FormattedThread } from '@/lib/twitter-thread-formatter';
@@ -78,6 +80,7 @@ const quickPrompts = [
 
 export default function GeneratePage() {
   const { data: session } = useSession();
+  const { canUse, getTokenCost } = useTokens();
   const { addNotification } = useDashboardStore();
   
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -289,22 +292,31 @@ export default function GeneratePage() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-center mb-6"
+        className="text-center mb-8"
       >
-        <div className="inline-flex items-center space-x-2 glassmorphism rounded-full px-4 py-2 mb-4">
-          <Sparkles className="h-4 w-4 text-purple-400" />
-          <span className="text-sm font-medium">AI Content Chat</span>
-        </div>
-        <h1 className="text-3xl font-bold font-sora mb-2">
-          Generate <span className="text-gradient">Viral Content</span>
+        <motion.div 
+          className="inline-flex items-center space-x-3 glassmorphism-elevated rounded-full px-6 py-3 mb-6"
+          whileHover={{ scale: 1.05 }}
+        >
+          <motion.div
+            className="p-1 rounded-full bg-gradient-to-r from-purple-500 to-pink-500"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+          >
+            <Sparkles className="h-4 w-4 text-white" />
+          </motion.div>
+          <span className="text-sm font-semibold text-gradient-premium">AI Content Chat</span>
+        </motion.div>
+        <h1 className="text-4xl font-bold font-sora mb-4">
+          Generate <span className="text-gradient-premium">Viral Content</span>
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground text-lg">
           Chat with AI to create engaging content for any platform
         </p>
       </motion.div>
 
       {/* Chat Container */}
-      <div className="flex-1 glassmorphism rounded-xl overflow-hidden flex flex-col">
+      <div className="flex-1 card-premium overflow-hidden flex flex-col">
         {/* Chat Messages */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           <AnimatePresence>

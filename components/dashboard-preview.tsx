@@ -10,7 +10,7 @@ export function DashboardPreview() {
       transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
       className="relative mx-auto max-w-4xl"
     >
-      <div className="glassmorphism rounded-2xl p-8 shadow-2xl border border-white/20">
+      <div className="glassmorphism-dark rounded-2xl p-8 shadow-2xl border border-white/20">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-2xl font-bold font-sora">Dashboard Overview</h3>

@@ -209,8 +209,26 @@ export default function OutreachPage() {
   const [selectedPlatform, setSelectedPlatform] = useState('all');
   const [isGenerating, setIsGenerating] = useState(false);
   const [showAddContact, setShowAddContact] = useState(false);
+  const [showNewTemplate, setShowNewTemplate] = useState(false);
   const [customMessage, setCustomMessage] = useState('');
   const [messageTopic, setMessageTopic] = useState('');
+  const [newContact, setNewContact] = useState({
+    name: '',
+    email: '',
+    platform: 'twitter',
+    handle: '',
+    company: '',
+    title: '',
+    interests: '',
+    notes: ''
+  });
+  const [newTemplate, setNewTemplate] = useState({
+    name: '',
+    platform: 'twitter',
+    scenario: '',
+    template: '',
+    tags: ''
+  });
 
   const generatePersonalizedMessage = async () => {
     if (!selectedTemplate || !selectedContact) return;
@@ -294,6 +312,74 @@ export default function OutreachPage() {
 
   const copyMessage = async (message: string) => {
     await navigator.clipboard.writeText(message);
+    toast.success('Copied to clipboard!');
+  };
+
+  const addContact = () => {
+    if (!newContact.name || !newContact.handle) {
+      toast.error('Please fill in name and handle');
+      return;
+    }
+
+    const contact: OutreachContact = {
+      id: Date.now().toString(),
+      name: newContact.name,
+      email: newContact.email,
+      platform: newContact.platform,
+      handle: newContact.handle,
+      company: newContact.company,
+      title: newContact.title,
+      interests: newContact.interests.split(',').map(i => i.trim()).filter(Boolean),
+      recentActivity: 'Recently added contact',
+      connectionStrength: 'cold',
+      notes: newContact.notes,
+      customFields: {}
+    };
+
+    setOutreachContacts(prev => [...prev, contact]);
+    setNewContact({
+      name: '',
+      email: '',
+      platform: 'twitter',
+      handle: '',
+      company: '',
+      title: '',
+      interests: '',
+      notes: ''
+    });
+    setShowAddContact(false);
+    toast.success('Contact added successfully!');
+  };
+
+  const addTemplate = () => {
+    if (!newTemplate.name || !newTemplate.template) {
+      toast.error('Please fill in template name and content');
+      return;
+    }
+
+    const template: OutreachTemplate = {
+      id: Date.now().toString(),
+      name: newTemplate.name,
+      platform: newTemplate.platform,
+      scenario: newTemplate.scenario,
+      template: newTemplate.template,
+      personalizationFields: ['name', 'company', 'recent_activity'],
+      successRate: Math.floor(Math.random() * 30) + 15,
+      avgResponseTime: `${Math.floor(Math.random() * 5) + 1}.${Math.floor(Math.random() * 9)} days`,
+      bestTimeToSend: 'Tue-Thu, 10-11 AM',
+      tags: newTemplate.tags.split(',').map(t => t.trim()).filter(Boolean)
+    };
+
+    setOutreachTemplates(prev => [...prev, template]);
+    setNewTemplate({
+      name: '',
+      platform: 'twitter',
+      scenario: '',
+      template: '',
+      tags: ''
+    });
+    setShowNewTemplate(false);
+    toast.success('Template created successfully!');
   };
 
   const getPlatformLink = (platform: string, message: string, contact: OutreachContact) => {
@@ -351,7 +437,10 @@ export default function OutreachPage() {
             <Plus className="h-4 w-4 mr-2" />
             Add Contact
           </Button>
-          <Button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white">
+          <Button 
+            onClick={() => setShowNewTemplate(true)}
+            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+          >
             <Sparkles className="h-4 w-4 mr-2" />
             New Template
           </Button>
@@ -815,6 +904,210 @@ export default function OutreachPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Add Contact Modal */}
+      {showAddContact && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowAddContact(false)}
+          />
+          <div className="relative glassmorphism rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-bold font-sora mb-6">Add New Contact</h3>
+            
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="contactName">Full Name *</Label>
+                  <Input
+                    id="contactName"
+                    value={newContact.name}
+                    onChange={(e) => setNewContact(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="e.g., John Smith"
+                    className="glassmorphism-dark border-white/20"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="contactEmail">Email</Label>
+                  <Input
+                    id="contactEmail"
+                    type="email"
+                    value={newContact.email}
+                    onChange={(e) => setNewContact(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="john@example.com"
+                    className="glassmorphism-dark border-white/20"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Platform</Label>
+                  <Select value={newContact.platform} onValueChange={(value) => setNewContact(prev => ({ ...prev, platform: value }))}>
+                    <SelectTrigger className="glassmorphism-dark border-white/20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="twitter">Twitter/X</SelectItem>
+                      <SelectItem value="linkedin">LinkedIn</SelectItem>
+                      <SelectItem value="instagram">Instagram</SelectItem>
+                      <SelectItem value="email">Email</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="contactHandle">Handle/Username *</Label>
+                  <Input
+                    id="contactHandle"
+                    value={newContact.handle}
+                    onChange={(e) => setNewContact(prev => ({ ...prev, handle: e.target.value }))}
+                    placeholder="@username or profile link"
+                    className="glassmorphism-dark border-white/20"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="contactCompany">Company</Label>
+                  <Input
+                    id="contactCompany"
+                    value={newContact.company}
+                    onChange={(e) => setNewContact(prev => ({ ...prev, company: e.target.value }))}
+                    placeholder="Company name"
+                    className="glassmorphism-dark border-white/20"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="contactTitle">Job Title</Label>
+                  <Input
+                    id="contactTitle"
+                    value={newContact.title}
+                    onChange={(e) => setNewContact(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="e.g., CEO, Marketing Director"
+                    className="glassmorphism-dark border-white/20"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="contactInterests">Interests (comma-separated)</Label>
+                <Input
+                  id="contactInterests"
+                  value={newContact.interests}
+                  onChange={(e) => setNewContact(prev => ({ ...prev, interests: e.target.value }))}
+                  placeholder="SaaS, AI, Marketing, Productivity"
+                  className="glassmorphism-dark border-white/20"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="contactNotes">Notes</Label>
+                <Textarea
+                  id="contactNotes"
+                  value={newContact.notes}
+                  onChange={(e) => setNewContact(prev => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Any relevant information about this contact..."
+                  className="glassmorphism-dark border-white/20"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <Button onClick={addContact} className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white">
+                  Add Contact
+                </Button>
+                <Button onClick={() => setShowAddContact(false)} variant="outline" className="glassmorphism">
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Template Modal */}
+      {showNewTemplate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowNewTemplate(false)}
+          />
+          <div className="relative glassmorphism rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-bold font-sora mb-6">Create New Template</h3>
+            
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="templateName">Template Name *</Label>
+                  <Input
+                    id="templateName"
+                    value={newTemplate.name}
+                    onChange={(e) => setNewTemplate(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="e.g., Podcast Guest Outreach"
+                    className="glassmorphism-dark border-white/20"
+                  />
+                </div>
+                <div>
+                  <Label>Platform</Label>
+                  <Select value={newTemplate.platform} onValueChange={(value) => setNewTemplate(prev => ({ ...prev, platform: value }))}>
+                    <SelectTrigger className="glassmorphism-dark border-white/20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="twitter">Twitter/X</SelectItem>
+                      <SelectItem value="linkedin">LinkedIn</SelectItem>
+                      <SelectItem value="instagram">Instagram</SelectItem>
+                      <SelectItem value="email">Email</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="templateScenario">Scenario Description</Label>
+                <Input
+                  id="templateScenario"
+                  value={newTemplate.scenario}
+                  onChange={(e) => setNewTemplate(prev => ({ ...prev, scenario: e.target.value }))}
+                  placeholder="e.g., Reaching out to podcast hosts for guest opportunities"
+                  className="glassmorphism-dark border-white/20"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="templateContent">Template Content *</Label>
+                <Textarea
+                  id="templateContent"
+                  value={newTemplate.template}
+                  onChange={(e) => setNewTemplate(prev => ({ ...prev, template: e.target.value }))}
+                  placeholder="Use {name}, {company}, etc. for personalization fields..."
+                  className="glassmorphism-dark border-white/20 min-h-[150px]"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="templateTags">Tags (comma-separated)</Label>
+                <Input
+                  id="templateTags"
+                  value={newTemplate.tags}
+                  onChange={(e) => setNewTemplate(prev => ({ ...prev, tags: e.target.value }))}
+                  placeholder="Podcast, Cold Outreach, Partnership"
+                  className="glassmorphism-dark border-white/20"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <Button onClick={addTemplate} className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white">
+                  Create Template
+                </Button>
+                <Button onClick={() => setShowNewTemplate(false)} variant="outline" className="glassmorphism">
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

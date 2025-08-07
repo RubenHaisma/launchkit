@@ -9,10 +9,10 @@ import { AiDemo } from '@/components/ai-demo';
 
 export default function Home() {
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen bg-background">
       <Navigation />
       <HeroSection />
-      <div className="py-20 bg-gradient-to-b from-black via-purple-900/10 to-black">
+      <div className="py-20 bg-gradient-to-b from-background via-purple-900/20 to-background">
         <AiDemo />
       </div>
       <ReplacementTools />

@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 
 export default function TermsPage() {
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen bg-background">
       <Navigation />
       
       <section className="pt-32 pb-24 relative overflow-hidden">
@@ -20,9 +20,9 @@ export default function TermsPage() {
             transition={{ duration: 0.8 }}
             className="text-center mb-16"
           >
-            <div className="inline-flex items-center space-x-2 glassmorphism rounded-full px-4 py-2 mb-6">
+            <div className="inline-flex items-center space-x-2 glassmorphism-dark rounded-full px-4 py-2 mb-6 border border-purple-500/30">
               <FileText className="h-4 w-4 text-purple-400" />
-              <span className="text-sm font-medium">Terms of Service</span>
+              <span className="text-sm font-medium text-white">Terms of Service</span>
             </div>
             
             <h1 className="text-4xl md:text-6xl font-bold font-sora mb-6">

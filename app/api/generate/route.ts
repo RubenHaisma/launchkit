@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { deductCredits } from '@/lib/credits'
+import { TokenManager, TokenUsageType } from '@/lib/token-manager'
 import { generateContent, ContentType, ToneType, AudienceType } from '@/lib/ai'
 import { getBusinessContext, buildBusinessContextPrompt, getPersonalizedTone, getPersonalizedAudience } from '@/lib/business-context'
 
@@ -103,14 +103,44 @@ export async function POST(request: NextRequest) {
       finalPlatform = platform || 'email';
     }
 
-    // Check and deduct credits based on content type
-    const creditCost = getCreditsForContentType(finalType) * count;
-    const hasCredits = await deductCredits(session.user.id, creditCost);
+    // Map content types to token usage types
+    const getTokenUsageType = (contentType: ContentType): TokenUsageType => {
+      const typeMap: Record<ContentType, TokenUsageType> = {
+        'tweet': 'tweet',
+        'twitter-thread': 'twitter-thread',
+        'linkedin-post': 'linkedin-post',
+        'reddit-post': 'reddit-post',
+        'instagram-caption': 'instagram-caption',
+        'tiktok-script': 'tiktok-script',
+        'email-subject': 'email-subject',
+        'email-body': 'email-body',
+        'blog-title': 'blog-title',
+        'blog-post': 'blog-post',
+        'product-hunt-launch': 'product-hunt-launch',
+        'cold-email': 'cold-email',
+        'newsletter': 'newsletter'
+      }
+      return typeMap[contentType] || 'tweet'
+    }
+
+    // Check and deduct tokens using new system
+    const tokenUsageType = getTokenUsageType(finalType)
+    const tokenResult = await TokenManager.useTokens(
+      session.user.id, 
+      tokenUsageType, 
+      count,
+      {
+        provider: 'ai-generation',
+        model: finalType,
+        endpoint: '/api/generate'
+      }
+    )
     
-    if (!hasCredits) {
+    if (!tokenResult.success) {
       return NextResponse.json({ 
-        error: 'Insufficient credits',
-        code: 'INSUFFICIENT_CREDITS'
+        error: tokenResult.error || 'Insufficient tokens',
+        code: 'INSUFFICIENT_CREDITS',
+        upgradeRequired: tokenResult.upgradeRequired
       }, { status: 402 })
     }
 
@@ -170,7 +200,7 @@ export async function POST(request: NextRequest) {
           platform: platform || 'twitter',
           wordCount: firstResult.content.split(' ').length,
           estimatedReadTime: Math.ceil(firstResult.content.split(' ').length / 200),
-          creditsUsed: creditCost,
+          tokensUsed: tokenResult.tokensUsed || 0,
           businessContextUsed: !!businessContext,
         },
       });
@@ -195,7 +225,7 @@ export async function POST(request: NextRequest) {
         platform: platform || 'twitter',
         wordCount: firstResult.content.split(' ').length,
         estimatedReadTime: Math.ceil(firstResult.content.split(' ').length / 200),
-        creditsUsed: creditCost,
+        tokensUsed: tokenResult.tokensUsed || 0,
         businessContextUsed: !!businessContext,
       },
     });
@@ -208,7 +238,8 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Credit cost based on content complexity
+// Legacy function - now handled by TokenManager
+// Kept for backward compatibility
 function getCreditsForContentType(type: ContentType): number {
   const creditMap: Record<ContentType, number> = {
     'tweet': 1,

@@ -62,6 +62,7 @@ interface DashboardState {
   addCampaign: (campaign: Omit<Campaign, 'id' | 'createdAt'>) => void;
   updateCampaign: (id: string, updates: Partial<Campaign>) => void;
   removeCampaign: (id: string) => void;
+  clearCampaigns: () => void;
 
   // Notifications
   notifications: Notification[];
@@ -179,6 +180,9 @@ export const useDashboardStore = create<DashboardState>()(
         set((state) => ({
           campaigns: state.campaigns.filter((c) => c.id !== id),
         })),
+
+      clearCampaigns: () =>
+        set({ campaigns: [] }),
 
       addNotification: (notification) =>
         set((state) => ({

@@ -28,6 +28,8 @@ import { Button } from '@/components/ui/button';
 import { useDashboardStore } from '@/lib/store/dashboard-store';
 import { CreditBadge } from '@/components/ui/credit-badge';
 import { PlanBadge } from '@/components/ui/plan-badge';
+import { UsageStatsWidget } from '@/components/dashboard/usage-stats-widget';
+import { NotificationPanel } from '@/components/dashboard/notification-panel';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -61,6 +63,7 @@ export default function DashboardLayout({
   } = useDashboardStore();
   
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const unreadCount = notifications.filter(n => !n.read).length;
 
   // Redirect if not authenticated
@@ -108,15 +111,7 @@ export default function DashboardLayout({
     return null; // Will redirect
   }
 
-  const sidebarVariants = {
-    expanded: { width: 256 },
-    collapsed: { width: 80 },
-  };
 
-  const contentVariants = {
-    expanded: { marginLeft: 256 },
-    collapsed: { marginLeft: 80 },
-  };
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -135,13 +130,12 @@ export default function DashboardLayout({
       </AnimatePresence>
 
       {/* Sidebar */}
-      <motion.div
-        variants={sidebarVariants}
-        animate={sidebarCollapsed ? 'collapsed' : 'expanded'}
-        transition={{ duration: 0.3, ease: 'easeInOut' }}
-        className={`fixed left-0 top-0 h-full glassmorphism-dark border-r border-white/10 z-50 flex flex-col ${
-          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        } transition-transform duration-300`}
+      <div
+        className={`h-screen glassmorphism-dark border-r border-white/10 z-50 flex flex-col transition-all duration-300 ease-in-out ${
+          sidebarCollapsed ? 'w-20' : 'w-64'
+        } ${
+          mobileMenuOpen ? 'fixed translate-x-0' : 'fixed -translate-x-full lg:relative lg:translate-x-0'
+        }`}
       >
         {/* Sidebar Header */}
         <div className="p-6 border-b border-white/10 flex items-center justify-between">
@@ -151,14 +145,21 @@ export default function DashboardLayout({
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="flex items-center space-x-2"
+                className="flex items-center space-x-3"
               >
-                <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500">
+                <motion.div 
+                  className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg neon-glow"
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
                   <Zap className="h-6 w-6 text-white" />
+                </motion.div>
+                <div>
+                  <span className="text-xl font-bold font-sora text-gradient-premium">
+                    LaunchPilot
+                  </span>
+                  <div className="text-xs text-muted-foreground font-medium">Professional</div>
                 </div>
-                <span className="text-xl font-bold font-sora text-gradient-blue">
-                  LaunchPilot
-                </span>
               </motion.div>
             )}
           </AnimatePresence>
@@ -199,22 +200,38 @@ export default function DashboardLayout({
                 <li key={item.id}>
                   <Link href={item.href}>
                     <motion.div
-                      whileHover={{ scale: 1.02 }}
+                      whileHover={{ scale: 1.02, x: 4 }}
                       whileTap={{ scale: 0.98 }}
-                      className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all cursor-pointer ${
+                      className={`relative flex items-center space-x-3 px-4 py-3 rounded-xl transition-all cursor-pointer group ${
                         isActive 
-                          ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-purple-400' 
-                          : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
+                          ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-white shadow-lg' 
+                          : 'text-muted-foreground hover:text-white hover:bg-white/5'
                       }`}
                     >
-                      <item.icon className="h-5 w-5 flex-shrink-0" />
+                      {isActive && (
+                        <motion.div
+                          layoutId="activeTab"
+                          className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-purple-500 to-pink-500 rounded-r-full"
+                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                        />
+                      )}
+                      <motion.div
+                        className={`p-2 rounded-lg transition-all ${
+                          isActive 
+                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg' 
+                            : 'group-hover:bg-white/10'
+                        }`}
+                        whileHover={{ scale: 1.1 }}
+                      >
+                        <item.icon className="h-5 w-5 flex-shrink-0" />
+                      </motion.div>
                       <AnimatePresence>
                         {!sidebarCollapsed && (
                           <motion.span
                             initial={{ opacity: 0, width: 0 }}
                             animate={{ opacity: 1, width: 'auto' }}
                             exit={{ opacity: 0, width: 0 }}
-                            className="font-medium whitespace-nowrap"
+                            className="font-semibold whitespace-nowrap"
                           >
                             {item.label}
                           </motion.span>
@@ -238,27 +255,15 @@ export default function DashboardLayout({
               className="p-4 border-t border-white/10"
             >
               <div className="glassmorphism-dark rounded-lg p-4">
-                <div className="text-sm font-semibold mb-2">Usage This Month</div>
-                <div className="text-xs text-muted-foreground mb-3">234 / 500 generations</div>
-                <div className="w-full bg-gray-700 rounded-full h-2">
-                  <div 
-                    className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-500" 
-                    style={{ width: '47%' }} 
-                  />
-                </div>
+                <UsageStatsWidget />
               </div>
             </motion.div>
           )}
         </AnimatePresence>
-      </motion.div>
+      </div>
 
       {/* Main Content */}
-      <motion.div
-        variants={contentVariants}
-        animate={sidebarCollapsed ? 'collapsed' : 'expanded'}
-        transition={{ duration: 0.3, ease: 'easeInOut' }}
-        className="flex-1 flex flex-col min-h-screen lg:ml-0 ml-0"
-      >
+      <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
         {/* Header */}
         <motion.header
           initial={{ y: -50 }}
@@ -278,50 +283,73 @@ export default function DashboardLayout({
 
             {/* Welcome Message */}
             <div className="hidden lg:block">
-              <h1 className="text-2xl font-bold font-sora">
-                Good morning, {session.user.name?.split(' ')[0]}! 👋
-              </h1>
-              <p className="text-muted-foreground">Ready to launch something amazing today?</p>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <h1 className="text-2xl font-bold font-sora text-gradient-premium">
+                  Good morning, {session.user.name?.split(' ')[0]}! 👋
+                </h1>
+                <p className="text-muted-foreground font-medium">Ready to launch something amazing today?</p>
+              </motion.div>
             </div>
 
             {/* Header Actions */}
             <div className="flex items-center space-x-4">
-              <CreditBadge />
+              <CreditBadge variant="detailed" />
               <PlanBadge />
               
               {/* User Menu */}
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
-                  <User className="h-4 w-4 text-white" />
-                </div>
+              <motion.div 
+                className="flex items-center space-x-3 glassmorphism-dark px-3 py-2 rounded-xl"
+                whileHover={{ scale: 1.02 }}
+              >
+                <motion.div 
+                  className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center shadow-lg"
+                  whileHover={{ scale: 1.1 }}
+                >
+                  <User className="h-5 w-5 text-white" />
+                </motion.div>
                 <div className="hidden md:block">
-                  <div className="text-sm font-medium">{session.user.name}</div>
+                  <div className="text-sm font-semibold text-white">{session.user.name}</div>
                   <div className="text-xs text-muted-foreground">{session.user.email}</div>
                 </div>
-              </div>
+              </motion.div>
               
-              <Button size="sm" variant="outline" className="glassmorphism relative">
-                <Bell className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Notifications</span>
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {unreadCount}
-                  </span>
-                )}
-              </Button>
+              <div className="relative">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="glassmorphism relative hover:scale-105 transition-all duration-300"
+                  onClick={() => setShowNotifications(!showNotifications)}
+                >
+                  <Bell className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Notifications</span>
+                  {unreadCount > 0 && (
+                    <motion.span 
+                      className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{ repeat: Infinity, duration: 2 }}
+                    >
+                      {unreadCount}
+                    </motion.span>
+                  )}
+                </Button>
+              </div>
               
               <Button 
                 size="sm" 
                 variant="outline" 
                 onClick={handleLogout}
-                className="glassmorphism text-red-400 hover:text-red-300"
+                className="glassmorphism text-red-400 hover:text-red-300 hover:scale-105 transition-all duration-300"
               >
                 <LogOut className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Logout</span>
               </Button>
               
               <Link href="/dashboard/generate">
-                <Button size="sm" className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white">
+                <Button size="sm" variant="premium" className="hover:scale-105 transition-all duration-300 shadow-lg">
                   <PenTool className="h-4 w-4 mr-2" />
                   <span className="hidden sm:inline">Generate</span>
                 </Button>
@@ -345,7 +373,15 @@ export default function DashboardLayout({
             </motion.div>
           </AnimatePresence>
         </main>
-      </motion.div>
+      </div>
+
+      {/* Notification Panel */}
+      <AnimatePresence>
+        <NotificationPanel 
+          isOpen={showNotifications} 
+          onClose={() => setShowNotifications(false)} 
+        />
+      </AnimatePresence>
     </div>
   );
 }

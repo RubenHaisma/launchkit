@@ -43,8 +43,17 @@ export function Navigation() {
             <Link href="/about" className="text-foreground/80 hover:text-foreground transition-colors">
               About
             </Link>
+            <Link href="/generate" className="text-foreground/80 hover:text-foreground transition-colors">
+              Generator
+            </Link>
             <Link href="/pricing" className="text-foreground/80 hover:text-foreground transition-colors">
               Pricing
+            </Link>
+            <Link href="/integrations" className="text-foreground/80 hover:text-foreground transition-colors">
+              Integrations
+            </Link>
+            <Link href="/roadmap" className="text-foreground/80 hover:text-foreground transition-colors">
+              Roadmap
             </Link>
             <Link href="/dashboard" className="text-foreground/80 hover:text-foreground transition-colors">
               Dashboard
@@ -89,8 +98,17 @@ export function Navigation() {
               <Link href="/about" className="text-foreground/80 hover:text-foreground transition-colors">
                 About
               </Link>
+              <Link href="/generate" className="text-foreground/80 hover:text-foreground transition-colors">
+                Generator
+              </Link>
               <Link href="/pricing" className="text-foreground/80 hover:text-foreground transition-colors">
                 Pricing
+              </Link>
+              <Link href="/integrations" className="text-foreground/80 hover:text-foreground transition-colors">
+                Integrations
+              </Link>
+              <Link href="/roadmap" className="text-foreground/80 hover:text-foreground transition-colors">
+                Roadmap
               </Link>
               <Link href="/dashboard" className="text-foreground/80 hover:text-foreground transition-colors">
                 Dashboard

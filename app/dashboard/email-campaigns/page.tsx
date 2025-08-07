@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Mail, 
@@ -31,283 +31,202 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import toast from 'react-hot-toast';
 
-interface EmailCampaign {
+interface EmailService {
+  id: string;
+  serviceName: 'resend' | 'smtp' | 'sendgrid' | 'mailgun' | 'postmark';
+  displayName: string;
+  isActive: boolean;
+  isDefault: boolean;
+}
+
+interface OutreachCampaign {
   id: string;
   name: string;
   subject: string;
-  status: 'draft' | 'scheduled' | 'sent' | 'paused';
-  type: 'newsletter' | 'announcement' | 'onboarding' | 'promotional';
-  subscribers: number;
-  sent: number;
-  opened: number;
-  clicked: number;
-  sentAt?: string;
-  scheduledFor?: string;
   content: string;
-  previewText?: string;
   fromName: string;
   fromEmail: string;
+  status: 'draft' | 'scheduled' | 'sending' | 'sent' | 'paused';
+  totalRecipients: number;
+  sentCount: number;
+  deliveredCount: number;
+  openedCount: number;
+  clickedCount: number;
+  bounceCount: number;
+  scheduledAt?: string;
+  sentAt?: string;
+  createdAt: string;
 }
 
 interface EmailTemplate {
   id: string;
   name: string;
-  description: string;
-  category: string;
   subject: string;
   content: string;
-  preview: string;
-  usageCount: number;
+  category: string;
+  isPublic: boolean;
+  variables: string[];
 }
 
-interface Subscriber {
+interface OutreachRecipient {
   id: string;
   email: string;
   firstName?: string;
   lastName?: string;
-  status: 'active' | 'unsubscribed' | 'bounced';
-  subscribedAt: string;
-  lastOpenedAt?: string;
-  tags: string[];
-  source: string;
+  company?: string;
+  title?: string;
+  status: 'pending' | 'sent' | 'delivered' | 'opened' | 'clicked' | 'bounced';
+  openCount: number;
+  clickCount: number;
+  createdAt: string;
 }
 
 export default function EmailCampaignsPage() {
-  const [campaigns, setCampaigns] = useState<EmailCampaign[]>([
-    {
-      id: '1',
-      name: 'Weekly Product Updates',
-      subject: 'New features that will save you hours',
-      status: 'sent',
-      type: 'newsletter',
-      subscribers: 2450,
-      sent: 2450,
-      opened: 1029,
-      clicked: 156,
-      sentAt: '2024-01-15 09:00',
-      content: 'Hello {{firstName}}, here are this week\'s updates...',
-      fromName: 'LaunchPilot Team',
-      fromEmail: 'team@launchpilot.ai'
-    },
-    {
-      id: '2',
-      name: 'Product Launch Announcement',
-      subject: 'LaunchPilot 2.0 is here! 🚀',
-      status: 'scheduled',
-      type: 'announcement',
-      subscribers: 2450,
-      sent: 0,
-      opened: 0,
-      clicked: 0,
-      scheduledFor: '2024-01-22 10:00',
-      content: 'We\'re excited to announce LaunchPilot 2.0...',
-      fromName: 'LaunchPilot Team',
-      fromEmail: 'announcements@launchpilot.ai'
-    },
-    {
-      id: '3',
-      name: 'Onboarding Series - Day 1',
-      subject: 'Welcome to LaunchPilot! Let\'s get started',
-      status: 'draft',
-      type: 'onboarding',
-      subscribers: 2450,
-      sent: 0,
-      opened: 0,
-      clicked: 0,
-      content: 'Welcome {{firstName}}! Thanks for joining LaunchPilot...',
-      fromName: 'LaunchPilot Team',
-      fromEmail: 'onboarding@launchpilot.ai'
-    }
-  ]);
-
-  const [templates] = useState<EmailTemplate[]>([
-    {
-      id: '1',
-      name: 'Product Update Newsletter',
-      description: 'Share new features and improvements with your audience',
-      category: 'Newsletter',
-      subject: 'New features that will save you hours',
-      content: 'Hi {{firstName}},\n\nWe just shipped some amazing new features...',
-      preview: 'Hey {{firstName}}, we just shipped something amazing...',
-      usageCount: 24
-    },
-    {
-      id: '2',
-      name: 'Launch Announcement',
-      description: 'Announce your product launch to the world',
-      category: 'Announcement',
-      subject: '🚀 {{productName}} is now live!',
-      content: 'The wait is over! {{productName}} is now available...',
-      preview: 'The wait is over! {{productName}} is now live...',
-      usageCount: 12
-    },
-    {
-      id: '3',
-      name: 'Welcome Onboarding',
-      description: 'Welcome new subscribers and guide them',
-      category: 'Onboarding',
-      subject: 'Welcome to {{companyName}}! Here\'s what to expect',
-      content: 'Welcome to {{companyName}}! We\'re excited to have you...',
-      preview: 'Welcome to {{companyName}}! Here\'s what to expect...',
-      usageCount: 89
-    },
-    {
-      id: '4',
-      name: 'Re-engagement Campaign',
-      description: 'Win back inactive subscribers',
-      category: 'Re-engagement',
-      subject: 'We miss you! Come back and see what\'s new',
-      content: 'Hi {{firstName}}, we noticed you haven\'t been around...',
-      preview: 'We miss you! Come back and see what\'s new',
-      usageCount: 7
-    }
-  ]);
-
-  const [subscribers] = useState<Subscriber[]>([
-    {
-      id: '1',
-      email: 'john.doe@example.com',
-      firstName: 'John',
-      lastName: 'Doe',
-      status: 'active',
-      subscribedAt: '2024-01-10',
-      lastOpenedAt: '2024-01-15',
-      tags: ['early-adopter', 'premium'],
-      source: 'website'
-    },
-    {
-      id: '2',
-      email: 'sarah.smith@example.com',
-      firstName: 'Sarah',
-      lastName: 'Smith',
-      status: 'active',
-      subscribedAt: '2024-01-12',
-      tags: ['newsletter'],
-      source: 'social-media'
-    }
-  ]);
+  const [campaigns, setCampaigns] = useState<OutreachCampaign[]>([]);
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [recipients, setRecipients] = useState<OutreachRecipient[]>([]);
+  const [emailServices, setEmailServices] = useState<EmailService[]>([]);
 
   const [showNewCampaign, setShowNewCampaign] = useState(false);
   const [showNewTemplate, setShowNewTemplate] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [typeFilter, setTypeFilter] = useState('all');
 
   const [newCampaign, setNewCampaign] = useState({
     name: '',
     subject: '',
-    type: 'newsletter' as const,
     content: '',
-    previewText: '',
-    fromName: 'LaunchPilot Team',
-    fromEmail: 'team@launchpilot.ai',
-    scheduledFor: ''
+    fromName: '',
+    fromEmail: '',
+    replyTo: '',
+    emailServiceId: ''
   });
 
   const [newTemplate, setNewTemplate] = useState({
     name: '',
-    description: '',
-    category: 'Newsletter',
+    category: 'general',
     subject: '',
     content: ''
   });
 
+  const fetchAll = async () => {
+    try {
+      const [cRes, tRes, sRes] = await Promise.all([
+        fetch('/api/outreach-campaigns'),
+        fetch('/api/email-templates'),
+        fetch('/api/email-services')
+      ]);
+      if (cRes.ok) {
+        const data = await cRes.json();
+        setCampaigns(data.campaigns || []);
+      }
+      if (tRes.ok) {
+        const data = await tRes.json();
+        setTemplates(data.templates || []);
+      }
+      if (sRes.ok) {
+        const data = await sRes.json();
+        setEmailServices(data.services || []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchRecipients = async (campaignId: string) => {
+    try {
+      const res = await fetch(`/api/outreach-campaigns/recipients?campaignId=${encodeURIComponent(campaignId)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setRecipients(data.recipients || []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    fetchAll();
+  }, []);
+
+  useEffect(() => {
+    if (selectedCampaign) {
+      fetchRecipients(selectedCampaign);
+    } else {
+      setRecipients([]);
+    }
+  }, [selectedCampaign]);
+
   const createCampaign = async () => {
-    if (!newCampaign.name || !newCampaign.subject || !newCampaign.content) {
+    if (!newCampaign.name || !newCampaign.subject || !newCampaign.content || !newCampaign.emailServiceId || !newCampaign.fromName || !newCampaign.fromEmail) {
       toast.error('Please fill in all required fields');
       return;
     }
-
-    const campaign: EmailCampaign = {
-      id: Date.now().toString(),
-      ...newCampaign,
-      status: 'draft',
-      subscribers: subscribers.filter(s => s.status === 'active').length,
-      sent: 0,
-      opened: 0,
-      clicked: 0
-    };
-
-    setCampaigns(prev => [campaign, ...prev]);
-    setNewCampaign({
-      name: '',
-      subject: '',
-      type: 'newsletter',
-      content: '',
-      previewText: '',
-      fromName: 'LaunchPilot Team',
-      fromEmail: 'team@launchpilot.ai',
-      scheduledFor: ''
-    });
-    setShowNewCampaign(false);
-    toast.success('Campaign created successfully!');
+    try {
+      const res = await fetch('/api/outreach-campaigns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newCampaign)
+      });
+      if (res.ok) {
+        await fetchAll();
+        setNewCampaign({ name: '', subject: '', content: '', fromName: '', fromEmail: '', replyTo: '', emailServiceId: '' });
+        setShowNewCampaign(false);
+        toast.success('Campaign created successfully!');
+      } else {
+        const err = await res.json();
+        toast.error(err.error || 'Failed to create campaign');
+      }
+    } catch (e) {
+      toast.error('Failed to create campaign');
+    }
   };
 
-  const createTemplate = () => {
+  const createTemplate = async () => {
     if (!newTemplate.name || !newTemplate.subject || !newTemplate.content) {
       toast.error('Please fill in all required fields');
       return;
     }
-
-    toast.success('Template created successfully!');
-    setNewTemplate({
-      name: '',
-      description: '',
-      category: 'Newsletter',
-      subject: '',
-      content: ''
-    });
-    setShowNewTemplate(false);
+    try {
+      const res = await fetch('/api/email-templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newTemplate)
+      });
+      if (res.ok) {
+        await fetchAll();
+        setNewTemplate({ name: '', category: 'general', subject: '', content: '' });
+        setShowNewTemplate(false);
+        toast.success('Template created successfully!');
+      } else {
+        const err = await res.json();
+        toast.error(err.error || 'Failed to create template');
+      }
+    } catch (e) {
+      toast.error('Failed to create template');
+    }
   };
 
   const sendCampaign = async (campaignId: string) => {
-    const campaign = campaigns.find(c => c.id === campaignId);
-    if (!campaign) return;
-
-    setCampaigns(prev => prev.map(c => 
-      c.id === campaignId 
-        ? { ...c, status: 'sent', sent: c.subscribers, sentAt: new Date().toISOString() }
-        : c
-    ));
-    toast.success(`Campaign "${campaign.name}" sent to ${campaign.subscribers} subscribers!`);
+    try {
+      const res = await fetch(`/api/outreach-campaigns/${campaignId}/send`, { method: 'POST' });
+      if (res.ok) {
+        await fetchAll();
+        toast.success('Campaign sent');
+      } else {
+        const err = await res.json();
+        toast.error(err.error || 'Failed to send campaign');
+      }
+    } catch (e) {
+      toast.error('Failed to send campaign');
+    }
   };
 
-  const duplicateCampaign = (campaignId: string) => {
-    const campaign = campaigns.find(c => c.id === campaignId);
-    if (!campaign) return;
-
-    const duplicate: EmailCampaign = {
-      ...campaign,
-      id: Date.now().toString(),
-      name: `${campaign.name} (Copy)`,
-      status: 'draft',
-      sent: 0,
-      opened: 0,
-      clicked: 0,
-      sentAt: undefined,
-      scheduledFor: undefined
-    };
-
-    setCampaigns(prev => [duplicate, ...prev]);
-    toast.success('Campaign duplicated successfully!');
-  };
-
-  const deleteCampaign = (campaignId: string) => {
-    const campaign = campaigns.find(c => c.id === campaignId);
-    if (!campaign) return;
-
-    setCampaigns(prev => prev.filter(c => c.id !== campaignId));
-    toast.success(`Campaign "${campaign.name}" deleted`);
-  };
+  // Duplicate/Delete not implemented with backend yet; hide related UI.
 
   const exportData = () => {
-    const data = {
-      campaigns,
-      subscribers: subscribers.filter(s => s.status === 'active'),
-      exportedAt: new Date().toISOString()
-    };
-    
+    const data = { campaigns, exportedAt: new Date().toISOString() };
     const dataStr = JSON.stringify(data, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
@@ -322,16 +241,15 @@ export default function EmailCampaignsPage() {
     const matchesSearch = campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          campaign.subject.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || campaign.status === statusFilter;
-    const matchesType = typeFilter === 'all' || campaign.type === typeFilter;
-    return matchesSearch && matchesStatus && matchesType;
+    return matchesSearch && matchesStatus;
   });
 
   const stats = {
     totalCampaigns: campaigns.length,
-    activeCampaigns: campaigns.filter(c => c.status === 'sent' || c.status === 'scheduled').length,
-    totalSubscribers: subscribers.filter(s => s.status === 'active').length,
-    avgOpenRate: campaigns.length > 0 ? campaigns.reduce((acc, c) => acc + (c.sent > 0 ? (c.opened / c.sent) * 100 : 0), 0) / campaigns.length : 0,
-    avgClickRate: campaigns.length > 0 ? campaigns.reduce((acc, c) => acc + (c.sent > 0 ? (c.clicked / c.sent) * 100 : 0), 0) / campaigns.length : 0
+    activeCampaigns: campaigns.filter(c => c.status === 'sent' || c.status === 'scheduled' || c.status === 'sending').length,
+    totalRecipients: campaigns.reduce((sum, c) => sum + c.totalRecipients, 0),
+    avgOpenRate: campaigns.length > 0 ? campaigns.reduce((acc, c) => acc + (c.sentCount > 0 ? (c.openedCount / c.sentCount) * 100 : 0), 0) / campaigns.length : 0,
+    avgClickRate: campaigns.length > 0 ? campaigns.reduce((acc, c) => acc + (c.sentCount > 0 ? (c.clickedCount / c.sentCount) * 100 : 0), 0) / campaigns.length : 0
   };
 
   return (
@@ -396,8 +314,8 @@ export default function EmailCampaignsPage() {
             <Users className="h-5 w-5 text-purple-400" />
             <span className="text-xs text-green-400">+5%</span>
           </div>
-          <div className="text-2xl font-bold font-sora mb-1">{stats.totalSubscribers.toLocaleString()}</div>
-          <div className="text-sm text-muted-foreground">Subscribers</div>
+          <div className="text-2xl font-bold font-sora mb-1">{stats.totalRecipients.toLocaleString()}</div>
+          <div className="text-sm text-muted-foreground">Recipients</div>
         </Card>
         
         <Card className="glassmorphism p-6">
@@ -505,7 +423,7 @@ export default function EmailCampaignsPage() {
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
                     <Button 
                       size="sm" 
                       variant="outline" 
@@ -513,14 +431,6 @@ export default function EmailCampaignsPage() {
                       className="glassmorphism"
                     >
                       <Eye className="h-3 w-3" />
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={() => duplicateCampaign(campaign.id)}
-                      className="glassmorphism"
-                    >
-                      <Edit className="h-3 w-3" />
                     </Button>
                     {campaign.status === 'draft' && (
                       <Button 
@@ -532,14 +442,6 @@ export default function EmailCampaignsPage() {
                         Send
                       </Button>
                     )}
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={() => deleteCampaign(campaign.id)}
-                      className="glassmorphism text-red-400 hover:text-red-300"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
                   </div>
                 </div>
                 
@@ -631,8 +533,8 @@ export default function EmailCampaignsPage() {
                 <div className="glassmorphism-dark rounded-lg p-3 mb-4">
                   <div className="text-xs font-semibold mb-1">Subject:</div>
                   <div className="text-xs text-muted-foreground mb-2">{template.subject}</div>
-                  <div className="text-xs font-semibold mb-1">Preview:</div>
-                  <div className="text-xs text-muted-foreground">{template.preview}</div>
+                  <div className="text-xs font-semibold mb-1">Variables:</div>
+                  <div className="text-xs text-muted-foreground">{template.variables.join(', ') || 'None'}</div>
                 </div>
                 
                 <div className="flex gap-2">
@@ -652,9 +554,9 @@ export default function EmailCampaignsPage() {
                   >
                     Use Template
                   </Button>
-                  <Button size="sm" variant="outline" className="glassmorphism">
-                    <Edit className="h-3 w-3" />
-                  </Button>
+                   <Button size="sm" variant="outline" className="glassmorphism" disabled>
+                     <Edit className="h-3 w-3" />
+                   </Button>
                 </div>
               </Card>
             ))}
@@ -806,16 +708,17 @@ export default function EmailCampaignsPage() {
                   />
                 </div>
                 <div>
-                  <Label>Campaign Type</Label>
-                  <Select value={newCampaign.type} onValueChange={(value: any) => setNewCampaign(prev => ({ ...prev, type: value }))}>
+                  <Label>Email Service</Label>
+                  <Select value={newCampaign.emailServiceId} onValueChange={(value: string) => setNewCampaign(prev => ({ ...prev, emailServiceId: value }))}>
                     <SelectTrigger className="glassmorphism-dark border-white/20">
-                      <SelectValue />
+                      <SelectValue placeholder="Choose email service" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="newsletter">Newsletter</SelectItem>
-                      <SelectItem value="announcement">Announcement</SelectItem>
-                      <SelectItem value="onboarding">Onboarding</SelectItem>
-                      <SelectItem value="promotional">Promotional</SelectItem>
+                      {emailServices.filter(s => s.isActive).map((service) => (
+                        <SelectItem key={service.id} value={service.id}>
+                          {service.displayName} ({service.serviceName})
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

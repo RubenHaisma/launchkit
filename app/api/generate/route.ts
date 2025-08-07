@@ -172,6 +172,8 @@ export async function POST(request: NextRequest) {
 
     // Save generation to database
     const firstResult = results[0];
+    
+    // Store in generations table for all content types
     await prisma.generation.create({
       data: {
         userId: session.user.id,
@@ -182,6 +184,22 @@ export async function POST(request: NextRequest) {
         audience: personalizedAudience,
       }
     })
+
+    // Additionally store tweets in the tweets table for analytics
+    if (finalType === 'tweet') {
+      for (const result of results) {
+        await prisma.tweet.create({
+          data: {
+            userId: session.user.id,
+            content: result.content,
+            isGenerated: true,
+            published: false, // Not published yet
+            generationType: finalType,
+            prompt: finalPrompt || '',
+          }
+        });
+      }
+    }
 
     // For multiple results (like Twitter), return array of content
     if (count > 1) {

@@ -11,152 +11,311 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user from database
+    // Get user from database with business profile
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
+      where: { email: session.user.email },
+      include: { businessProfile: true }
     });
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Generate mock marketing plan based on current date
-    const today = new Date();
-    const marketingPlan = [
-      {
-        day: 'Today',
-        task: 'Generate viral Twitter thread',
-        description: 'Chat with AI to create engaging X/Twitter content',
-        status: 'pending',
-        icon: 'Twitter',
-        action: '/dashboard/generate',
-        priority: 'high'
-      },
-      {
-        day: 'Tomorrow',
-        task: 'Send cold email campaign',
-        description: 'Reach out to 50 potential customers',
-        status: 'pending',
-        icon: 'Mail',
-        action: '/dashboard/outreach',
-        priority: 'high'
-      },
-      {
-        day: 'Day 3',
-        task: 'Create LinkedIn content',
-        description: 'Professional posts to engage your network',
-        status: 'pending',
-        icon: 'FileText',
-        action: '/dashboard/generate',
-        priority: 'medium'
-      },
-      {
-        day: 'Day 4',
-        task: 'Product Hunt preparation',
-        description: 'Finalize launch assets and strategy',
-        status: 'pending',
-        icon: 'Rocket',
-        action: '/dashboard/generate',
-        priority: 'high'
-      },
-      {
-        day: 'Day 5',
-        task: 'Email newsletter',
-        description: 'Weekly update to subscribers',
-        status: 'pending',
-        icon: 'Mail',
-        action: '/dashboard/email-campaigns',
-        priority: 'medium'
-      },
-      {
-        day: 'Day 6',
-        task: 'Social media engagement',
-        description: 'Respond to comments and build community',
-        status: 'pending',
-        icon: 'Users',
-        action: '/dashboard/twitter',
-        priority: 'low'
-      },
-      {
-        day: 'Day 7',
-        task: 'Analytics review',
-        description: 'Analyze performance and plan next week',
-        status: 'pending',
-        icon: 'BarChart3',
-        action: '/dashboard/analytics',
-        priority: 'medium'
+    // Generate personalized marketing plan based on business profile
+    const profile = user.businessProfile;
+    
+    // Check if user has an active marketing plan for this week
+    const startOfWeek = new Date();
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    
+    let existingPlan = await prisma.marketingPlan.findFirst({
+      where: {
+        userId: user.id,
+        weekStarting: startOfWeek,
+        isActive: true
       }
-    ];
-
-    // Generate mock campaigns
-    const campaigns = [
-      {
-        id: '1',
-        name: 'Product Launch Tweet',
-        content: '🚀 Excited to announce LaunchPilot is now live! The AI marketing co-founder you\'ve been waiting for...',
-        type: 'twitter',
-        status: 'active',
-        metrics: {
-          impressions: 1247,
-          engagement: 89,
-          clicks: 23
-        },
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: '2',
-        name: 'Welcome Email Series',
-        content: 'Welcome to LaunchPilot! Here\'s everything you need to know to get started...',
-        type: 'email',
-        status: 'scheduled',
-        metrics: {
-          opened: 234,
-          clicked: 45,
-          subscribers: 1250
-        },
-        createdAt: new Date(Date.now() - 86400000).toISOString()
+    });
+    
+    // If no plan exists or user requests regeneration, create a new one
+    const shouldGenerateNewPlan = !existingPlan || 
+      new URL(request.url).searchParams.get('regenerate') === 'true';
+    
+    let marketingPlan;
+    
+    if (shouldGenerateNewPlan) {
+      const generatePersonalizedPlan = () => {
+      const basePlans = {
+        'SaaS': [
+          {
+            day: 'Today',
+            task: 'Create product demo content',
+            description: 'Share your SaaS features and benefits on X/Twitter',
+            action: '/dashboard/generate',
+            icon: 'Twitter',
+            priority: 'high'
+          },
+          {
+            day: 'Tomorrow', 
+            task: 'Launch cold outreach campaign',
+            description: 'Target potential enterprise customers',
+            action: '/dashboard/outreach',
+            icon: 'Mail',
+            priority: 'high'
+          },
+          {
+            day: 'Day 3',
+            task: 'Share technical insights',
+            description: 'Post thought leadership content on LinkedIn',
+            action: '/dashboard/linkedin',
+            icon: 'FileText',
+            priority: 'high'
+          },
+          {
+            day: 'Day 4',
+            task: 'Product Hunt launch prep',
+            description: 'Prepare assets and build launch strategy',
+            action: '/dashboard/launch',
+            icon: 'Rocket',
+            priority: 'high'
+          }
+        ],
+        'E-commerce': [
+          {
+            day: 'Today',
+            task: 'Showcase bestselling products',
+            description: 'Create engaging product showcase for social media',
+            action: '/dashboard/generate',
+            icon: 'Twitter',
+            priority: 'high'
+          },
+          {
+            day: 'Tomorrow',
+            task: 'Email marketing campaign',
+            description: 'Send promotional campaign to subscriber list',
+            action: '/dashboard/email-campaigns',
+            icon: 'Mail',
+            priority: 'high'
+          },
+          {
+            day: 'Day 3',
+            task: 'User-generated content',
+            description: 'Encourage customers to share reviews',
+            action: '/dashboard/community',
+            icon: 'Users',
+            priority: 'medium'
+          },
+          {
+            day: 'Day 4',
+            task: 'Visual content creation',
+            description: 'Create product lifestyle images and videos',
+            action: '/dashboard/visual-content',
+            icon: 'Camera',
+            priority: 'high'
+          }
+        ],
+        'default': [
+          {
+            day: 'Today',
+            task: 'Generate viral content',
+            description: 'Create engaging social media content',
+            action: '/dashboard/generate',
+            icon: 'Twitter', 
+            priority: 'high'
+          },
+          {
+            day: 'Tomorrow',
+            task: 'Build your network',
+            description: 'Connect with potential customers and partners',
+            action: '/dashboard/outreach',
+            icon: 'Mail',
+            priority: 'high'
+          },
+          {
+            day: 'Day 3',
+            task: 'Professional content',
+            description: 'Share expertise on LinkedIn',
+            action: '/dashboard/linkedin',
+            icon: 'FileText',
+            priority: 'medium'
+          },
+          {
+            day: 'Day 4',
+            task: 'Community building',
+            description: 'Engage with your target audience',
+            action: '/dashboard/community',
+            icon: 'Users',
+            priority: 'medium'
+          }
+        ]
+      };
+      
+      const businessType = profile?.businessModel || 'default';
+      const industry = profile?.industry || '';
+      
+      let planKey: keyof typeof basePlans = 'default';
+      if (businessType.toLowerCase().includes('saas') || industry.toLowerCase().includes('software')) {
+        planKey = 'SaaS';
+      } else if (businessType.toLowerCase().includes('ecommerce') || businessType.toLowerCase().includes('retail')) {
+        planKey = 'E-commerce';
       }
-    ];
+      
+      const basePlan = basePlans[planKey];
+      
+      // Add remaining days with generic tasks
+      const fullPlan = [...basePlan];
+      const remainingDays = [
+        { day: 'Day 5', task: 'Email newsletter', description: 'Send weekly update to subscribers', action: '/dashboard/email-campaigns', icon: 'Mail', priority: 'medium' },
+        { day: 'Day 6', task: 'Social media engagement', description: 'Respond to comments and build community', action: '/dashboard/twitter', icon: 'Users', priority: 'low' },
+        { day: 'Day 7', task: 'Analytics review', description: 'Analyze performance and plan next week', action: '/dashboard/analytics', icon: 'BarChart3', priority: 'medium' }
+      ];
+      
+      fullPlan.push(...remainingDays);
+      
+      // Personalize descriptions based on business profile
+      return fullPlan.map(item => {
+        let personalizedDescription = item.description;
+        if (profile?.businessName) {
+          personalizedDescription = personalizedDescription.replace('your', `${profile.businessName}'s`);
+        }
+        if (profile?.targetAudience && item.description.includes('audience')) {
+          personalizedDescription += ` (${profile.targetAudience})`;
+        }
+        
+        return {
+          ...item,
+          description: personalizedDescription,
+          status: 'pending'
+        };
+      });
+    }
+    
+      const newPlan = generatePersonalizedPlan();
+      
+      // Save or update the marketing plan in database
+      if (existingPlan) {
+        existingPlan = await prisma.marketingPlan.update({
+          where: { id: existingPlan.id },
+          data: {
+            planData: newPlan,
+            completedTasks: [], // Reset completed tasks on regeneration
+            updatedAt: new Date()
+          }
+        });
+      } else {
+        existingPlan = await prisma.marketingPlan.create({
+          data: {
+            userId: user.id,
+            planData: newPlan,
+            weekStarting: startOfWeek,
+            isActive: true,
+            completedTasks: []
+          }
+        });
+      }
+      
+      marketingPlan = newPlan;
+    } else {
+      // Use existing plan
+      marketingPlan = existingPlan?.planData as any[];
+      
+      // Mark completed tasks
+      marketingPlan = marketingPlan.map((item: any) => ({
+        ...item,
+        status: existingPlan!.completedTasks.includes(item.day) ? 'completed' : 'pending'
+      }));
+    }
 
-    // Generate mock notifications
-    const notifications = [
-      {
-        id: '1',
-        type: 'success',
-        title: 'Campaign Performance',
-        message: 'Your Twitter thread gained 1.2k impressions in the last hour!',
+    // Get real campaigns from database
+    const campaigns = await prisma.campaign.findMany({
+      where: { userId: user.id },
+      include: {
+        emails: {
+          take: 1,
+          orderBy: { createdAt: 'desc' }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 10
+    });
+    
+    // Transform campaigns to include content and metrics
+    const transformedCampaigns = campaigns.map((campaign: any) => ({
+      id: campaign.id,
+      name: campaign.name,
+      content: campaign.emails[0]?.body || 'No content available',
+      subject: campaign.emails[0]?.subject,
+      type: campaign.type,
+      status: campaign.status,
+      scheduledFor: campaign.emails[0]?.sentAt,
+      createdAt: campaign.createdAt.toISOString(),
+      metrics: {
+        // Real metrics would come from email service or analytics
+        opened: 0,
+        clicked: 0,
+        impressions: 0,
+        engagement: 0
+      }
+    }));
+
+    // Get real user activity as notifications
+    const recentActivity = await prisma.userActivity.findMany({
+      where: { userId: user.id },
+      orderBy: { timestamp: 'desc' },
+      take: 10
+    });
+    
+    // Transform user activity into notifications
+    const notifications = recentActivity.map((activity: any) => ({
+      id: activity.id,
+      type: activity.activity.includes('error') ? 'error' : 
+            activity.activity.includes('warning') ? 'warning' :
+            activity.activity.includes('success') || activity.activity.includes('generated') ? 'success' : 'info',
+      title: activity.activity.charAt(0).toUpperCase() + activity.activity.slice(1).replace('_', ' '),
+      message: activity.description || `${activity.activity.replace('_', ' ')} completed`,
+      timestamp: activity.timestamp.toISOString(),
+      read: Math.random() > 0.5 // This could be stored in a separate notifications table
+    }));
+    
+    // Add credit usage warning if user is running low
+    const creditWarningThreshold = 0.8;
+    const maxCredits = user.plan === 'pro' ? 1000 : user.plan === 'premium' ? 5000 : 50;
+    if (user.credits / maxCredits < (1 - creditWarningThreshold)) {
+      notifications.unshift({
+        id: 'credit-warning',
+        type: 'warning',
+        title: 'Credit Usage Alert',
+        message: `You have ${user.credits} credits remaining (${Math.round((user.credits / maxCredits) * 100)}% of ${maxCredits})`,
         timestamp: new Date().toISOString(),
         read: false
-      },
-      {
-        id: '2',
-        type: 'info',
-        title: 'New Feature',
-        message: 'AI-powered content scheduling is now available',
-        timestamp: new Date(Date.now() - 3600000).toISOString(),
-        read: false
-      },
-      {
-        id: '3',
-        type: 'warning',
-        title: 'Credit Usage',
-        message: 'You\'ve used 80% of your monthly credits',
-        timestamp: new Date(Date.now() - 7200000).toISOString(),
-        read: true
-      }
-    ];
+      });
+    }
 
-    // Calculate stats
+    // Get real stats from database
+    const userStats = await prisma.userStats.findUnique({
+      where: { userId: user.id }
+    });
+    
+    const generationsCount = await prisma.generation.count({
+      where: { userId: user.id }
+    });
+    
+    const postsCount = await prisma.post.count({
+      where: { userId: user.id }
+    });
+    
     const stats = {
-      totalGenerations: 47,
+      totalGenerations: userStats?.totalGenerations || generationsCount,
       totalCampaigns: campaigns.length,
-      activeUsers: 1,
-      totalTokensUsed: 15420
+      totalPosts: postsCount,
+      totalTokensUsed: userStats?.totalTokens || 0,
+      totalCost: userStats?.totalCost || 0,
+      creditsRemaining: user.credits
     };
 
     return NextResponse.json({
       marketingPlan,
-      campaigns,
+      campaigns: transformedCampaigns,
       notifications,
       stats
     });

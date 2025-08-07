@@ -59,6 +59,11 @@ model User {
   userStats              UserStats?
   businessProfile        BusinessProfile?
   userActivity           UserActivity[]
+  marketingPlans         MarketingPlan[]
+  tweets                 Tweet[]
+  twitterAnalytics       TwitterAnalytics[]
+  emailServices          EmailService[]
+  outreachCampaigns      OutreachCampaign[]
 
   @@map("users")
 }
@@ -220,6 +225,7 @@ model BusinessProfile {
   goals               String[]
   socialMediaLinks    Json?
   websiteData         Json?
+  twitterHandle       String?
   lastScrapedAt       DateTime?
   isSetupComplete     Boolean   @default(false)
   createdAt           DateTime  @default(now())
@@ -280,4 +286,170 @@ model SystemLogs {
   timestamp DateTime @default(now())
 
   @@map("system_logs")
+}
+
+model MarketingPlan {
+  id          String   @id @default(cuid())
+  userId      String
+  planData    Json     // Store the full marketing plan as JSON
+  weekStarting DateTime
+  isActive    Boolean  @default(true)
+  completedTasks String[] // Array of completed task IDs/days
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("marketing_plans")
+}
+
+model Tweet {
+  id          String    @id @default(cuid())
+  userId      String
+  content     String
+  tweetId     String?   // Twitter API tweet ID
+  tweetUrl    String?   // Full URL to the tweet
+  isGenerated Boolean   @default(false) // Whether this was AI generated
+  published   Boolean   @default(false)
+  publishedAt DateTime?
+  
+  // Analytics data
+  views       Int?
+  likes       Int?
+  retweets    Int?
+  replies     Int?
+  impressions Int?
+  engagements Int?
+  
+  // Metadata
+  generationType String? // AI generation type used
+  prompt         String? // Original prompt if AI generated
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  analytics   TwitterAnalytics[] // Relation to analytics snapshots
+
+  @@map("tweets")
+}
+
+model TwitterAnalytics {
+  id          String   @id @default(cuid())
+  userId      String
+  tweetId     String
+  
+  // Analytics snapshots over time
+  views       Int?
+  likes       Int?
+  retweets    Int?
+  replies     Int?
+  impressions Int?
+  engagements Int?
+  
+  // Performance metrics
+  engagementRate Decimal? @db.Decimal(5, 4)
+  clickRate      Decimal? @db.Decimal(5, 4)
+  
+  timestamp   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tweet       Tweet    @relation(fields: [tweetId], references: [id], onDelete: Cascade)
+
+  @@map("twitter_analytics")
+}
+
+model EmailService {
+  id          String   @id @default(cuid())
+  userId      String
+  serviceName String   // 'resend', 'smtp', 'sendgrid', 'mailgun', 'postmark', etc.
+  displayName String   // User-friendly name
+  isActive    Boolean  @default(true)
+  isDefault   Boolean  @default(false) // Only one can be default per user
+  
+  // Encrypted credentials - stored as JSON
+  credentials String   // Encrypted JSON containing API keys, SMTP details, etc.
+  
+  // Configuration options
+  config      Json?    // Additional service-specific configuration
+  
+  // Usage tracking
+  lastUsedAt  DateTime?
+  totalSent   Int       @default(0)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaigns   OutreachCampaign[] // Campaigns using this service
+
+  @@unique([userId, serviceName]) // One service config per user per service type
+  @@map("email_services")
+}
+
+model OutreachCampaign {
+  id              String   @id @default(cuid())
+  userId          String
+  emailServiceId  String
+  
+  // Campaign details
+  name            String
+  subject         String
+  content         String   // HTML email content
+  fromName        String
+  fromEmail       String
+  replyTo         String?
+  
+  // Campaign status
+  status          String   @default("draft") // draft, scheduled, sending, sent, paused
+  scheduledAt     DateTime?
+  sentAt          DateTime?
+  
+  // Recipients and tracking
+  totalRecipients Int      @default(0)
+  sentCount       Int      @default(0)
+  deliveredCount  Int      @default(0)
+  openedCount     Int      @default(0)
+  clickedCount    Int      @default(0)
+  bounceCount     Int      @default(0)
+  unsubscribeCount Int     @default(0)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailService    EmailService @relation(fields: [emailServiceId], references: [id], onDelete: Cascade)
+  recipients      OutreachRecipient[]
+  
+  @@map("outreach_campaigns")
+}
+
+model OutreachRecipient {
+  id         String   @id @default(cuid())
+  campaignId String
+  
+  // Recipient info
+  email      String
+  firstName  String?
+  lastName   String?
+  company    String?
+  title      String?
+  customFields Json?   // Additional personalization data
+  
+  // Email status
+  status     String   @default("pending") // pending, sent, delivered, opened, clicked, bounced, unsubscribed
+  sentAt     DateTime?
+  deliveredAt DateTime?
+  openedAt   DateTime?
+  clickedAt  DateTime?
+  bouncedAt  DateTime?
+  unsubscribedAt DateTime?
+  
+  // Tracking
+  openCount  Int      @default(0)
+  clickCount Int      @default(0)
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  campaign   OutreachCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  
+  @@unique([campaignId, email]) // One recipient per email per campaign
+  @@map("outreach_recipients")
 }

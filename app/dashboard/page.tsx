@@ -33,72 +33,17 @@ import { TokenUsageWidget } from '@/components/dashboard/token-usage-widget';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 
-// AI Marketing Plan for the week
-const marketingPlan = [
-  {
-    day: 'Today',
-    task: 'Generate viral Twitter thread',
-    description: 'Chat with AI to create engaging X/Twitter content',
-    status: 'pending',
-    icon: Twitter,
-    action: '/dashboard/generate',
-    priority: 'high'
-  },
-  {
-    day: 'Tomorrow',
-    task: 'Send cold email campaign',
-    description: 'Reach out to 50 potential customers',
-    status: 'pending',
-    icon: Mail,
-    action: '/dashboard/outreach',
-    priority: 'high'
-  },
-  {
-    day: 'Day 3',
-    task: 'Create LinkedIn content',
-    description: 'Professional posts to engage your network',
-    status: 'pending',
-    icon: FileText,
-    action: '/dashboard/generate',
-    priority: 'medium'
-  },
-  {
-    day: 'Day 4',
-    task: 'Product Hunt preparation',
-    description: 'Finalize launch assets and strategy',
-    status: 'pending',
-    icon: Rocket,
-    action: '/dashboard/generate',
-    priority: 'high'
-  },
-  {
-    day: 'Day 5',
-    task: 'Email newsletter',
-    description: 'Weekly update to subscribers',
-    status: 'pending',
-    icon: Mail,
-    action: '/dashboard/email-campaigns',
-    priority: 'medium'
-  },
-  {
-    day: 'Day 6',
-    task: 'Social media engagement',
-    description: 'Respond to comments and build community',
-    status: 'pending',
-    icon: Users,
-    action: '/dashboard/twitter',
-    priority: 'low'
-  },
-  {
-    day: 'Day 7',
-    task: 'Analytics review',
-    description: 'Analyze performance and plan next week',
-    status: 'pending',
-    icon: BarChart3,
-    action: '/dashboard/analytics',
-    priority: 'medium'
-  }
-];
+// Icon mapping for marketing plan items
+const iconMap: { [key: string]: any } = {
+  Twitter,
+  Mail,
+  FileText,
+  Rocket,
+  Users,
+  BarChart3,
+  Building,
+  Camera: FileText, // Fallback for Camera icon
+};
 
 export default function DashboardHome() {
   const { 
@@ -114,6 +59,7 @@ export default function DashboardHome() {
   const [completedTasks, setCompletedTasks] = useState<string[]>([]);
   const [metrics, setMetrics] = useState<any>(null);
   const [marketingPlan, setMarketingPlan] = useState<any[]>([]);
+  const [regeneratingPlan, setRegeneratingPlan] = useState(false);
   const [loading, setLoading] = useState(true);
   const [businessProfile, setBusinessProfile] = useState<any>(null);
   const [showBusinessSetup, setShowBusinessSetup] = useState(false);
@@ -206,14 +152,41 @@ export default function DashboardHome() {
     return () => clearInterval(interval);
   }, [addNotification]);
 
-  const completeTask = (taskDay: string) => {
-    setCompletedTasks(prev => [...prev, taskDay]);
-    toast.success('Task completed! Great job!');
-    addNotification({
-      type: 'success',
-      title: 'Task Completed',
-      message: `You completed: ${marketingPlan.find(t => t.day === taskDay)?.task}`
-    });
+  const completeTask = async (taskDay: string) => {
+    try {
+      const response = await fetch('/api/marketing-plan/complete-task', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ taskDay }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to complete task');
+      }
+
+      const result = await response.json();
+      setCompletedTasks(result.completedTasks);
+      
+      const task = marketingPlan.find(t => t.day === taskDay);
+      toast.success('Task completed! Great job!');
+      addNotification({
+        type: 'success',
+        title: 'Task Completed',
+        message: `You completed: ${task?.task}`
+      });
+      
+      // Refresh dashboard data to get updated activity
+      const dashboardResponse = await fetch('/api/dashboard');
+      if (dashboardResponse.ok) {
+        const dashboardData = await dashboardResponse.json();
+        setMarketingPlan(dashboardData.marketingPlan || []);
+      }
+    } catch (error) {
+      console.error('Error completing task:', error);
+      toast.error('Failed to complete task. Please try again.');
+    }
   };
 
   const handleBusinessSetupComplete = async (businessData: any) => {
@@ -621,6 +594,67 @@ export default function DashboardHome() {
         </motion.div>
       </div>
 
+      {/* Business Insights Section */}
+      {businessProfile?.isSetupComplete && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+          className="card-premium group"
+        >
+          <div className="flex items-center space-x-3 mb-6">
+            <motion.div 
+              className="p-3 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 shadow-lg"
+              whileHover={{ scale: 1.1, rotate: 5 }}
+            >
+              <Target className="h-6 w-6 text-white" />
+            </motion.div>
+            <div>
+              <h3 className="text-2xl font-bold font-sora text-gradient-premium">Business Insights</h3>
+              <p className="text-muted-foreground mt-1">AI-powered recommendations for {businessProfile.businessName}</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="glassmorphism-dark rounded-lg p-4">
+              <div className="flex items-center space-x-2 mb-2">
+                <TrendingUp className="h-4 w-4 text-green-400" />
+                <span className="text-sm font-semibold text-green-400">Growth Opportunity</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {businessProfile.industry?.includes('Tech') || businessProfile.businessModel?.includes('SaaS') 
+                  ? 'Focus on product demos and technical content to showcase your expertise'
+                  : businessProfile.businessModel?.includes('E-commerce')
+                  ? 'Leverage user-generated content and seasonal campaigns'
+                  : 'Build thought leadership through consistent valuable content'}
+              </p>
+            </div>
+            
+            <div className="glassmorphism-dark rounded-lg p-4">
+              <div className="flex items-center space-x-2 mb-2">
+                <Users className="h-4 w-4 text-blue-400" />
+                <span className="text-sm font-semibold text-blue-400">Target Audience</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {businessProfile.targetAudience || 'Set your target audience in business profile for personalized tips'}
+              </p>
+            </div>
+            
+            <div className="glassmorphism-dark rounded-lg p-4">
+              <div className="flex items-center space-x-2 mb-2">
+                <Rocket className="h-4 w-4 text-purple-400" />
+                <span className="text-sm font-semibold text-purple-400">Next Milestone</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {businessProfile.goals && businessProfile.goals.length > 0
+                  ? businessProfile.goals[0]
+                  : 'Complete your business goals to get targeted marketing strategies'}
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* AI Marketing Plan */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -645,33 +679,49 @@ export default function DashboardHome() {
             variant="outline" 
             size="sm" 
             className="glassmorphism hover:scale-105 transition-all duration-300"
+            disabled={regeneratingPlan}
             onClick={async () => {
+              setRegeneratingPlan(true);
               try {
-                // Refresh dashboard data to get new marketing plan
-                const response = await fetch('/api/dashboard');
+                // Refresh dashboard data with regeneration flag
+                const response = await fetch('/api/dashboard?regenerate=true');
                 if (response.ok) {
                   const data = await response.json();
                   setMarketingPlan(data.marketingPlan || []);
-                  toast.success('New marketing plan generated!');
+                  // Clear completed tasks when regenerating
+                  setCompletedTasks([]);
+                  toast.success('✨ New personalized marketing plan generated!');
+                  addNotification({
+                    type: 'success',
+                    title: 'Marketing Plan Updated',
+                    message: 'Your 7-day AI marketing plan has been regenerated with fresh tasks'
+                  });
                 } else {
                   toast.error('Failed to generate new plan');
                 }
               } catch (error) {
                 toast.error('Failed to generate new plan');
+              } finally {
+                setRegeneratingPlan(false);
               }
             }}
           >
-            <Zap className="h-4 w-4 mr-2" />
-            Regenerate Plan
+            {regeneratingPlan ? (
+              <div className="w-4 h-4 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mr-2" />
+            ) : (
+              <Zap className="h-4 w-4 mr-2" />
+            )}
+            {regeneratingPlan ? 'Generating...' : 'Regenerate Plan'}
           </Button>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {marketingPlan.map((item, index) => {
-            const isCompleted = completedTasks.includes(item.day);
+            const isCompleted = item.status === 'completed' || completedTasks.includes(item.day);
             const StatusIcon = isCompleted ? CheckCircle : 
                              item.priority === 'high' ? AlertCircle : 
                              Clock;
+            const ItemIcon = iconMap[item.icon] || FileText;
             
             return (
               <motion.div
@@ -679,13 +729,19 @@ export default function DashboardHome() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className={`glassmorphism-dark rounded-lg p-4 transition-all hover:bg-white/5 ${
+                className={`glassmorphism-dark rounded-lg p-4 transition-all hover:bg-white/5 hover:scale-105 cursor-pointer ${
                   isCompleted ? 'opacity-75' : ''
                 }`}
               >
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-2">
-                    <item.icon className="h-4 w-4 text-purple-400" />
+                    <div className={`p-2 rounded-lg ${
+                      item.priority === 'high' ? 'bg-red-500/20' :
+                      item.priority === 'medium' ? 'bg-yellow-500/20' :
+                      'bg-purple-500/20'
+                    }`}>
+                      <ItemIcon className="h-4 w-4 text-purple-400" />
+                    </div>
                     <span className="text-sm font-semibold text-purple-400">{item.day}</span>
                   </div>
                   <StatusIcon className={`h-4 w-4 ${
@@ -699,12 +755,12 @@ export default function DashboardHome() {
                 <h4 className={`text-sm font-semibold mb-2 ${isCompleted ? 'line-through' : ''}`}>
                   {item.task}
                 </h4>
-                <p className="text-xs text-muted-foreground mb-4">
+                <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
                   {item.description}
                 </p>
                 
                 <div className="flex items-center justify-between">
-                  <span className={`text-xs px-2 py-1 rounded-full ${
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                     item.priority === 'high' ? 'bg-red-500/20 text-red-400' :
                     item.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
                     'bg-gray-500/20 text-gray-400'
@@ -713,17 +769,19 @@ export default function DashboardHome() {
                   </span>
                   
                   {!isCompleted && (
-                    <div className="flex space-x-1">
+                    <div className="flex space-x-2">
                       <Link href={item.action}>
-                        <Button size="sm" variant="outline" className="glassmorphism text-xs px-2 py-1 h-auto">
-                          <ArrowRight className="h-3 w-3" />
+                        <Button size="sm" variant="outline" className="glassmorphism text-xs px-3 py-1 h-auto hover:scale-110 transition-all">
+                          Start
+                          <ArrowRight className="h-3 w-3 ml-1" />
                         </Button>
                       </Link>
                       <Button 
                         size="sm" 
                         variant="outline" 
-                        className="glassmorphism text-xs px-2 py-1 h-auto"
+                        className="glassmorphism text-xs px-2 py-1 h-auto hover:scale-110 transition-all"
                         onClick={() => completeTask(item.day)}
+                        title="Mark as completed"
                       >
                         <CheckCircle className="h-3 w-3" />
                       </Button>

@@ -117,6 +117,14 @@ const getPlatformSpecs = (contentType: ContentType) => {
 const buildSystemPrompt = (contentType: ContentType, tone: ToneType = 'professional', audience: AudienceType = 'general', businessContext?: string) => {
   const platformSpecs = getPlatformSpecs(contentType);
   
+  const tweetSpecificRules = contentType === 'tweet' 
+    ? '\n\nIMPORTANT TWEET RULES:\n- NEVER include hashtags in tweets\n- Focus on authentic, conversational content\n- Use natural language without forced hashtags\n- Make every word count within the character limit\n- Prioritize engagement through genuine value and relatability'
+    : '';
+  
+  const businessSuggestions = businessContext && contentType === 'tweet'
+    ? '\n\nBUSINESS-SPECIFIC SUGGESTIONS:\nBased on the business context provided, create content that:\n- Addresses the specific industry challenges and opportunities\n- Aligns with the business goals and target audience\n- Showcases expertise in their field\n- Provides actionable insights relevant to their business\n- Builds thought leadership in their industry'
+    : '';
+  
   const basePrompt = `You are an expert content creator and marketing strategist specializing in ${contentType} content.
 
 CONTENT TYPE: ${contentType}
@@ -124,7 +132,7 @@ TARGET AUDIENCE: ${audience}
 TONE: ${tone}
 PLATFORM SPECS: ${JSON.stringify(platformSpecs)}
 
-${businessContext || ''}
+${businessContext || ''}${tweetSpecificRules}${businessSuggestions}
 
 Create high-performing content that:
 1. Matches the exact tone and audience specified
@@ -290,7 +298,10 @@ Return the content optimized for maximum engagement and performance.
 
 // Helper functions
 function extractHashtags(content: string, contentType: ContentType): string[] {
-  if (!['tweet', 'instagram-caption', 'linkedin-post'].includes(contentType)) return [];
+  // Skip hashtag extraction for tweets as per user requirements
+  if (contentType === 'tweet') return [];
+  
+  if (!['instagram-caption', 'linkedin-post'].includes(contentType)) return [];
   
   const hashtags = content.match(/#[\w]+/g) || [];
   return Array.from(new Set(hashtags)); // Remove duplicates

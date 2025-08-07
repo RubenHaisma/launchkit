@@ -45,6 +45,7 @@ export interface UserProfile {
   company: string;
   industry: string;
   apiKey?: string;
+  twitterHandle?: string;
 }
 
 interface DashboardState {

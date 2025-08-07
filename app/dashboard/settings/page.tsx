@@ -40,6 +40,7 @@ export default function SettingsPage() {
     company: profile.company,
     industry: profile.industry,
     apiKey: profile.apiKey || '',
+    twitterHandle: profile.twitterHandle || '',
   });
   const [notifications, setNotifications] = useState({
     emailUpdates: true,
@@ -130,6 +131,22 @@ export default function SettingsPage() {
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="md:col-span-2">
+                  <Label htmlFor="twitterHandle">Twitter Handle</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">@</span>
+                    <Input
+                      id="twitterHandle"
+                      value={formData.twitterHandle || ''}
+                      onChange={(e) => setFormData({ ...formData, twitterHandle: e.target.value.replace('@', '') })}
+                      className="glassmorphism-dark border-white/20 pl-8"
+                      placeholder="yourusername"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Used to scrape your tweets for analytics and suggestions
+                  </p>
                 </div>
               </div>
             </div>

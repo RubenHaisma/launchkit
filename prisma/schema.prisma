@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -16,15 +13,14 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -38,30 +34,30 @@ model Session {
 }
 
 model User {
-  id               String    @id @default(cuid())
-  name             String?
-  email            String    @unique
-  emailVerified    DateTime?
-  image            String?
-  password         String?
-  stripeCustomerId String?   @unique
-  stripePriceId    String?
+  id                     String          @id @default(cuid())
+  name                   String?
+  email                  String          @unique
+  emailVerified          DateTime?
+  image                  String?
+  password               String?
+  stripeCustomerId       String?         @unique
+  stripePriceId          String?
   stripeCurrentPeriodEnd DateTime?
-  plan             String    @default("free") // free, pro, growth
-  credits          Int       @default(50)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  plan                   String          @default("free")
+  credits                Int             @default(50)
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+  accounts               Account[]
+  sessions               Session[]
+  apiUsage               ApiUsage[]
+  campaigns              Campaign[]
+  generations            Generation[]
+  newsletters            Newsletter[]
+  posts                  Post[]
+  userStats              UserStats?
+  businessProfile        BusinessProfile?
 
-  accounts    Account[]
-  sessions    Session[]
-  campaigns   Campaign[]
-  posts       Post[]
-  newsletters Newsletter[]
-  generations Generation[]
-  userStats   UserStats?
-  apiUsage    ApiUsage[]
-
-  @@map(name: "users")
+  @@map("users")
 }
 
 model VerificationToken {
@@ -76,80 +72,75 @@ model Campaign {
   id        String   @id @default(cuid())
   userId    String
   name      String
-  type      String   // email, twitter, launch
-  status    String   @default("draft") // draft, active, paused, completed
+  type      String
+  status    String   @default("draft")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emails    Email[]
 
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  emails Email[]
-
-  @@map(name: "campaigns")
+  @@map("campaigns")
 }
 
 model Email {
   id         String    @id @default(cuid())
   campaignId String
   subject    String
-  body       String    @db.Text
-  status     String    @default("draft") // draft, sent, failed
+  body       String
+  status     String    @default("draft")
   sentAt     DateTime?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
+  campaign   Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
-  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-
-  @@map(name: "emails")
+  @@map("emails")
 }
 
 model Post {
   id          String    @id @default(cuid())
   userId      String
-  platform    String    // twitter, reddit, linkedin
-  content     String    @db.Text
+  platform    String
+  content     String
   title       String?
   scheduled   DateTime?
   published   Boolean   @default(false)
   publishedAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map(name: "posts")
+  @@map("posts")
 }
 
 model Newsletter {
   id        String    @id @default(cuid())
   userId    String
   subject   String
-  content   String    @db.Text
+  content   String
   sent      Boolean   @default(false)
   sentAt    DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map(name: "newsletters")
+  @@map("newsletters")
 }
 
 model Generation {
   id        String   @id @default(cuid())
   userId    String
-  type      String   // tweet, email, blog, launch
-  prompt    String   @db.Text
-  content   String   @db.Text
+  type      String
+  prompt    String
+  content   String
   tone      String?
   audience  String?
-  model     String?  // gpt-4, claude-3, etc
-  tokens    Int?     // tokens used for this generation
-  cost      Decimal? @db.Decimal(10,6) // cost in USD
+  model     String?
+  tokens    Int?
+  cost      Decimal? @db.Decimal(10, 6)
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map(name: "generations")
+  @@map("generations")
 }
 
 model AdminUser {
@@ -157,51 +148,77 @@ model AdminUser {
   email     String   @unique
   name      String?
   password  String
-  role      String   @default("admin") // admin, super_admin
+  role      String   @default("admin")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@map(name: "admin_users")
+  @@map("admin_users")
 }
 
 model UserStats {
-  id               String   @id @default(cuid())
-  userId           String   @unique
-  totalGenerations Int      @default(0)
-  totalTokens      Int      @default(0)
-  totalCost        Decimal  @default(0) @db.Decimal(10,6)
-  lastActiveAt     DateTime @default(now())
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  totalGenerations Int       @default(0)
+  totalTokens      Int       @default(0)
+  totalCost        Decimal   @default(0) @db.Decimal(10, 6)
+  lastActiveAt     DateTime  @default(now())
   planUpgradedAt   DateTime?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map(name: "user_stats")
+  @@map("user_stats")
 }
 
 model ApiUsage {
   id        String   @id @default(cuid())
-  provider  String   // openai, anthropic
-  model     String   // gpt-4, claude-3-sonnet, etc
-  endpoint  String   // completions, chat, etc
+  provider  String
+  model     String
+  endpoint  String
   tokens    Int
-  cost      Decimal  @db.Decimal(10,6)
+  cost      Decimal  @db.Decimal(10, 6)
   userId    String?
   createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map(name: "api_usage")
+  @@map("api_usage")
 }
 
 model SystemConfig {
   id        String   @id @default(cuid())
   key       String   @unique
-  value     String   @db.Text
-  type      String   @default("string") // string, number, boolean, json
+  value     String
+  type      String   @default("string")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@map(name: "system_config")
+  @@map("system_config")
+}
+
+model BusinessProfile {
+  id                  String    @id @default(cuid())
+  userId              String    @unique
+  businessName        String?
+  website             String?
+  industry            String?
+  description         String?
+  targetAudience      String?
+  businessModel       String?
+  monthlyRevenue      String?
+  teamSize            String?
+  founded             String?
+  location            String?
+  competitors         String[]
+  uniqueValueProp     String?
+  mainChallenges      String[]
+  goals               String[]
+  socialMediaLinks    Json?
+  websiteData         Json?
+  lastScrapedAt       DateTime?
+  isSetupComplete     Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("business_profiles")
 }

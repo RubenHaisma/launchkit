@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Menu, X, Rocket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ThemeToggle } from '@/components/theme-toggle';
 import Link from 'next/link';
 
 export function Navigation() {
@@ -61,7 +60,6 @@ export function Navigation() {
             <Link href="/dashboard" className="text-foreground/80 hover:text-foreground transition-colors">
               Dashboard
             </Link>
-            <ThemeToggle />
             <div className="flex items-center space-x-3">
               <Link href="/auth/login">
                 <Button variant="ghost" className="text-foreground/80">
@@ -77,8 +75,7 @@ export function Navigation() {
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center space-x-2">
-            <ThemeToggle />
+          <div className="md:hidden">
             <Button
               variant="ghost"
               size="sm"

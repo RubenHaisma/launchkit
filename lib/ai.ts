@@ -1,12 +1,13 @@
-import { generateText, generateObject } from 'ai';
-import { anthropic } from '@ai-sdk/anthropic';
-import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
-
-// Initialize AI providers with API keys
-const anthropicProvider = anthropic;
-
-const openaiProvider = openai;
+import { 
+  generateTextWithFallback, 
+  generateObjectWithFallback, 
+  getBestProvider,
+  getAllProvidersHealth,
+  resetProviderErrors,
+  getProviderStats
+} from './ai-provider';
+import { formatAsTwitterThread, FormattedThread } from './twitter-thread-formatter';
 
 export type ContentType = 
   | 'tweet' 
@@ -57,6 +58,7 @@ interface GenerateContentOptions {
   keywords?: string[];
   callToAction?: string;
   maxLength?: number;
+  businessContext?: string;
 }
 
 interface GeneratedContent {
@@ -66,34 +68,29 @@ interface GeneratedContent {
   suggestedPostTime?: string;
   engagementPrediction?: number;
   optimizations?: string[];
+  thread?: FormattedThread; // For Twitter threads
+  copyText?: string; // Ready-to-paste format
 }
 
-// Best model selection for each content type
-const getOptimalModel = (contentType: ContentType) => {
-  const modelMap: Record<ContentType, any> = {
-    'tweet': 'claude-3-5-haiku-latest', // Fast, witty, concise
-    'twitter-thread': 'claude-3-5-sonnet-latest', // Better structure
-    'linkedin-post': 'claude-3-5-sonnet-latest', // Professional tone
-    'reddit-post': 'claude-3-5-haiku-latest', // Authentic, conversational
-    'instagram-caption': 'gpt-4o-mini', // Creative, visual
-    'tiktok-script': 'gpt-4o-mini', // Trendy, engaging
-    'email-subject': 'claude-3-5-haiku-latest', // High open rates
-    'email-body': 'claude-3-5-sonnet-latest', // Persuasive
-    'blog-title': 'claude-3-5-sonnet-latest', // SEO optimized
-    'blog-post': 'claude-3-5-sonnet-latest', // Long-form content
-    'product-hunt-launch': 'claude-3-5-sonnet-latest', // Strategic
-    'cold-email': 'claude-3-5-sonnet-latest', // Personalized
-    'newsletter': 'claude-3-5-sonnet-latest', // Engaging narrative
+// Best complexity and provider selection for each content type
+const getOptimalSettings = (contentType: ContentType) => {
+  const settingsMap: Record<ContentType, { complexity: 'fast' | 'smart' | 'balanced'; preferredProvider?: 'anthropic' | 'openai' }> = {
+    'tweet': { complexity: 'fast', preferredProvider: 'anthropic' }, // Fast, witty, concise
+    'twitter-thread': { complexity: 'smart', preferredProvider: 'anthropic' }, // Better structure
+    'linkedin-post': { complexity: 'balanced', preferredProvider: 'anthropic' }, // Professional tone
+    'reddit-post': { complexity: 'fast', preferredProvider: 'anthropic' }, // Authentic, conversational
+    'instagram-caption': { complexity: 'fast', preferredProvider: 'openai' }, // Creative, visual
+    'tiktok-script': { complexity: 'balanced', preferredProvider: 'openai' }, // Trendy, engaging
+    'email-subject': { complexity: 'fast', preferredProvider: 'anthropic' }, // High open rates
+    'email-body': { complexity: 'balanced', preferredProvider: 'anthropic' }, // Persuasive
+    'blog-title': { complexity: 'balanced', preferredProvider: 'anthropic' }, // SEO optimized
+    'blog-post': { complexity: 'smart', preferredProvider: 'anthropic' }, // Long-form content
+    'product-hunt-launch': { complexity: 'smart', preferredProvider: 'anthropic' }, // Strategic
+    'cold-email': { complexity: 'balanced', preferredProvider: 'anthropic' }, // Personalized
+    'newsletter': { complexity: 'smart', preferredProvider: 'anthropic' }, // Engaging narrative
   };
 
-  const modelId = modelMap[contentType] || 'claude-3-5-sonnet-latest';
-  
-  // Return the appropriate provider based on model ID
-  if (modelId.includes('claude')) {
-    return anthropicProvider(modelId);
-  } else {
-    return openaiProvider(modelId);
-  }
+  return settingsMap[contentType] || { complexity: 'balanced', preferredProvider: 'anthropic' };
 };
 
 // Platform-specific constraints and best practices
@@ -117,7 +114,7 @@ const getPlatformSpecs = (contentType: ContentType) => {
   return specs[contentType] || {};
 };
 
-const buildSystemPrompt = (contentType: ContentType, tone: ToneType = 'professional', audience: AudienceType = 'general') => {
+const buildSystemPrompt = (contentType: ContentType, tone: ToneType = 'professional', audience: AudienceType = 'general', businessContext?: string) => {
   const platformSpecs = getPlatformSpecs(contentType);
   
   const basePrompt = `You are an expert content creator and marketing strategist specializing in ${contentType} content.
@@ -127,19 +124,22 @@ TARGET AUDIENCE: ${audience}
 TONE: ${tone}
 PLATFORM SPECS: ${JSON.stringify(platformSpecs)}
 
+${businessContext || ''}
+
 Create high-performing content that:
 1. Matches the exact tone and audience specified
 2. Follows platform best practices and constraints
 3. Maximizes engagement potential
 4. Includes strategic elements (hooks, CTAs, etc.)
 5. Is authentic and provides real value
+6. ${businessContext ? 'Incorporates the business context to create personalized, relevant content' : 'Focuses on content that indie builders and entrepreneurs would find genuinely valuable and share-worthy'}
 
-Focus on content that indie builders and entrepreneurs would find genuinely valuable and share-worthy.`;
+${businessContext ? 'Always ensure the content aligns with the business\'s industry, goals, and target audience while addressing their specific challenges and unique value proposition.' : 'Focus on content that indie builders and entrepreneurs would find genuinely valuable and share-worthy.'}`;
 
   return basePrompt;
 };
 
-export async function generateContent(options: GenerateContentOptions): Promise<GeneratedContent> {
+export async function generateContent(options: GenerateContentOptions): Promise<GeneratedContent & { provider?: string }> {
   const {
     prompt,
     contentType,
@@ -149,12 +149,13 @@ export async function generateContent(options: GenerateContentOptions): Promise<
     additionalContext = '',
     keywords = [],
     callToAction,
-    maxLength
+    maxLength,
+    businessContext
   } = options;
 
   try {
-    const model = getOptimalModel(contentType);
-    const systemPrompt = buildSystemPrompt(contentType, tone, audience);
+    const settings = getOptimalSettings(contentType);
+    const systemPrompt = buildSystemPrompt(contentType, tone, audience, businessContext);
     const platformSpecs = getPlatformSpecs(contentType);
 
     // Build the user prompt with all context
@@ -186,38 +187,103 @@ Return the content optimized for maximum engagement and performance.
         optimizations: z.array(z.string()).optional().describe('Suggestions to improve performance')
       });
 
-      const result = await generateObject({
-        model,
+      const result = await generateObjectWithFallback({
         system: systemPrompt,
         prompt: contextualPrompt,
         schema,
         temperature: 0.8,
+        complexity: settings.complexity,
+        preferredProvider: settings.preferredProvider
       });
 
-      return result.object;
+      const generatedContent = result.object as GeneratedContent;
+      
+      // Special handling for Twitter threads
+      if (contentType === 'twitter-thread') {
+        const thread = formatAsTwitterThread(
+          generatedContent.content, 
+          generatedContent.hashtags,
+          {
+            addNumbers: true,
+            enhanceHook: true,
+            addCTA: true,
+            maxTweetsPerThread: 15
+          }
+        );
+        
+        return {
+          ...generatedContent,
+          thread,
+          copyText: thread.copyText,
+          content: thread.tweets.map(t => t.content).join('\n\n'),
+          engagementPrediction: thread.estimatedEngagement,
+          provider: result.provider
+        };
+      }
+      
+      return { 
+        ...generatedContent, 
+        provider: result.provider 
+      };
     } else {
       // For simple content, use generateText
-      const result = await generateText({
-        model,
+      const result = await generateTextWithFallback({
         system: systemPrompt,
         prompt: contextualPrompt,
         temperature: 0.8,
+        complexity: settings.complexity,
+        preferredProvider: settings.preferredProvider
       });
 
       // Add basic enhancements
       const hashtags = extractHashtags(result.text, contentType);
       const engagementScore = predictEngagement(result.text, contentType);
+      
+      // Special handling for single tweets that might be long
+      if (contentType === 'tweet' && result.text.length > 280) {
+        const thread = formatAsTwitterThread(
+          result.text, 
+          hashtags,
+          {
+            addNumbers: true,
+            enhanceHook: true,
+            addCTA: false, // Single tweet converted to thread, keep it simple
+            maxTweetsPerThread: 5
+          }
+        );
+        
+        return {
+          content: thread.tweets.map(t => t.content).join('\n\n'),
+          hashtags,
+          engagementPrediction: thread.estimatedEngagement,
+          suggestedPostTime: getSuggestedPostTime(contentType),
+          optimizations: getOptimizationSuggestions(result.text, contentType),
+          thread,
+          copyText: thread.copyText,
+          provider: result.provider
+        };
+      }
 
       return {
         content: result.text,
         hashtags,
         engagementPrediction: engagementScore,
         suggestedPostTime: getSuggestedPostTime(contentType),
-        optimizations: getOptimizationSuggestions(result.text, contentType)
+        optimizations: getOptimizationSuggestions(result.text, contentType),
+        provider: result.provider
       };
     }
   } catch (error) {
     console.error('AI Generation Error:', error);
+    
+    // Provide more specific error messages
+    if (error instanceof Error && error.message.includes('API key')) {
+      throw new Error('AI service configuration error. Please check your API keys.');
+    }
+    if (error instanceof Error && error.message.includes('No available')) {
+      throw new Error('All AI services are currently unavailable. Please try again later.');
+    }
+    
     throw new Error('Failed to generate content. Please try again.');
   }
 }
@@ -317,3 +383,14 @@ export async function generateDemoContent(demoPrompt: string): Promise<{
 
   return { tweet, linkedinPost, emailSubject };
 }
+
+// Export provider management functions for admin/debugging
+export { 
+  getAllProvidersHealth, 
+  resetProviderErrors, 
+  getProviderStats,
+  getBestProvider 
+};
+
+// Export thread formatting utilities
+export { formatAsTwitterThread, validateThread } from './twitter-thread-formatter';

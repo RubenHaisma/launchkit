@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { deductCredits } from '@/lib/credits'
 import { generateContent, ContentType, ToneType, AudienceType } from '@/lib/ai'
+import { getBusinessContext, buildBusinessContextPrompt, getPersonalizedTone, getPersonalizedAudience } from '@/lib/business-context'
 
 interface GenerateRequest {
   prompt?: string;
@@ -54,6 +55,11 @@ export async function POST(request: NextRequest) {
       finalPrompt = topic;
       finalType = 'tweet';
       finalTone = (style || 'engaging') as ToneType;
+      finalPlatform = 'twitter';
+    } else if (type === 'twitter-thread') {
+      finalPrompt = prompt || topic || '';
+      finalType = 'twitter-thread';
+      finalTone = (tone || style || 'engaging') as ToneType;
       finalPlatform = 'twitter';
     } else if (type === 'reddit' && topic) {
       finalPrompt = topic;
@@ -108,19 +114,28 @@ export async function POST(request: NextRequest) {
       }, { status: 402 })
     }
 
-    // Generate multiple tweets if requested
+    // Get business context for personalized content
+    const businessContext = await getBusinessContext(session.user.id);
+    const businessContextPrompt = buildBusinessContextPrompt(businessContext);
+    
+    // Get personalized tone and audience based on business context
+    const personalizedTone = finalTone || getPersonalizedTone(businessContext, 'professional') as ToneType;
+    const personalizedAudience = audience || getPersonalizedAudience(businessContext, 'entrepreneurs') as AudienceType;
+
+    // Generate multiple content pieces if requested
     const results = [];
     for (let i = 0; i < count; i++) {
       const result = await generateContent({
         prompt: finalPrompt,
         contentType: finalType,
-        tone: finalTone,
-        audience: audience || 'general',
+        tone: personalizedTone,
+        audience: personalizedAudience,
         platform: finalPlatform || 'twitter',
         additionalContext,
         keywords,
         callToAction,
-        maxLength: finalType === 'tweet' ? 280 : undefined
+        maxLength: finalType === 'tweet' ? 280 : undefined,
+        businessContext: businessContextPrompt
       });
       results.push(result);
     }
@@ -133,8 +148,8 @@ export async function POST(request: NextRequest) {
         type: finalType,
         prompt: finalPrompt || '',
         content: firstResult.content,
-        tone: finalTone,
-        audience: audience || 'general',
+        tone: personalizedTone,
+        audience: personalizedAudience,
       }
     })
 
@@ -150,12 +165,13 @@ export async function POST(request: NextRequest) {
         optimizations: firstResult.optimizations,
         metadata: {
           type: finalType,
-          tone: finalTone,
-          audience: audience || 'general',
+          tone: personalizedTone,
+          audience: personalizedAudience,
           platform: platform || 'twitter',
           wordCount: firstResult.content.split(' ').length,
           estimatedReadTime: Math.ceil(firstResult.content.split(' ').length / 200),
           creditsUsed: creditCost,
+          businessContextUsed: !!businessContext,
         },
       });
     }
@@ -169,14 +185,18 @@ export async function POST(request: NextRequest) {
       suggestedPostTime: firstResult.suggestedPostTime,
       engagementPrediction: firstResult.engagementPrediction,
       optimizations: firstResult.optimizations,
+      thread: (firstResult as any).thread, // Include thread data if available
+      copyText: (firstResult as any).copyText, // Include copy text if available
+      provider: (firstResult as any).provider, // Include provider info
       metadata: {
         type: finalType,
-        tone: finalTone,
-        audience: audience || 'general',
+        tone: personalizedTone,
+        audience: personalizedAudience,
         platform: platform || 'twitter',
         wordCount: firstResult.content.split(' ').length,
         estimatedReadTime: Math.ceil(firstResult.content.split(' ').length / 200),
         creditsUsed: creditCost,
+        businessContextUsed: !!businessContext,
       },
     });
   } catch (error) {

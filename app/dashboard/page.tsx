@@ -16,13 +16,19 @@ import {
   Calendar,
   Mail,
   Twitter,
-  FileText
+  FileText,
+  Building,
+  Globe,
+  Settings,
+  MessageSquare,
+  Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDashboardStore } from '@/lib/store/dashboard-store';
 import { todayStats, weeklyGrowth } from '@/lib/data/metrics';
 import { DashboardChart } from '@/components/dashboard/dashboard-chart';
 import { UpgradeBanner } from '@/components/ui/upgrade-banner';
+import { BusinessSetup } from '@/components/business-setup';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 
@@ -31,10 +37,10 @@ const marketingPlan = [
   {
     day: 'Today',
     task: 'Generate viral Twitter thread',
-    description: 'Create engaging content about your latest feature',
+    description: 'Chat with AI to create engaging X/Twitter content',
     status: 'pending',
     icon: Twitter,
-    action: '/dashboard/twitter',
+    action: '/dashboard/generate',
     priority: 'high'
   },
   {
@@ -48,8 +54,8 @@ const marketingPlan = [
   },
   {
     day: 'Day 3',
-    task: 'Publish SEO blog post',
-    description: 'Long-form content to drive organic traffic',
+    task: 'Create LinkedIn content',
+    description: 'Professional posts to engage your network',
     status: 'pending',
     icon: FileText,
     action: '/dashboard/generate',
@@ -105,9 +111,25 @@ export default function DashboardHome() {
   const [completedTasks, setCompletedTasks] = useState<string[]>([]);
   const [metrics, setMetrics] = useState(todayStats);
   const [loading, setLoading] = useState(true);
+  const [businessProfile, setBusinessProfile] = useState<any>(null);
+  const [showBusinessSetup, setShowBusinessSetup] = useState(false);
 
-  // Simulate loading metrics
+  // Fetch business profile and simulate loading metrics
   useEffect(() => {
+    const fetchBusinessProfile = async () => {
+      try {
+        const response = await fetch('/api/business-profile');
+        if (response.ok) {
+          const data = await response.json();
+          setBusinessProfile(data.businessProfile);
+        }
+      } catch (error) {
+        console.error('Error fetching business profile:', error);
+      }
+    };
+
+    fetchBusinessProfile();
+
     const timer = setTimeout(() => {
       setLoading(false);
     }, 1000);
@@ -147,12 +169,40 @@ export default function DashboardHome() {
 
   const completeTask = (taskDay: string) => {
     setCompletedTasks(prev => [...prev, taskDay]);
-    toast.success('Task completed! Great job! 🎉');
+    toast.success('Task completed! Great job!');
     addNotification({
       type: 'success',
       title: 'Task Completed',
       message: `You completed: ${marketingPlan.find(t => t.day === taskDay)?.task}`
     });
+  };
+
+  const handleBusinessSetupComplete = async (businessData: any) => {
+    try {
+      const response = await fetch('/api/business-profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(businessData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save business profile');
+      }
+
+      const result = await response.json();
+      setBusinessProfile(result.businessProfile);
+      setShowBusinessSetup(false);
+      toast.success('Business profile updated! Your AI content will now be personalized.');
+    } catch (error) {
+      console.error('Error saving business profile:', error);
+      toast.error('Failed to save business profile. Please try again.');
+    }
+  };
+
+  const handleSkipBusinessSetup = () => {
+    setShowBusinessSetup(false);
   };
 
   const stats = [
@@ -204,6 +254,52 @@ export default function DashboardHome() {
     <div className="p-6 space-y-8 max-w-7xl mx-auto">
       <UpgradeBanner />
       
+      {/* Hero CTA Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+        className="glassmorphism rounded-xl p-8 text-center relative overflow-hidden"
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-blue-500/10" />
+        <div className="relative z-10">
+          <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-3xl flex items-center justify-center mx-auto mb-4 neon-glow">
+            <Sparkles className="h-10 w-10 text-white" />
+          </div>
+          <h2 className="text-2xl font-bold font-sora mb-3">
+            Create Viral Content in <span className="text-gradient">Seconds</span>
+          </h2>
+          <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+            Chat with our AI to generate engaging content for X/Twitter, LinkedIn, and Reddit. 
+            Get instant posting links and watch your content go viral.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link href="/dashboard/generate">
+              <Button size="lg" className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white neon-glow">
+                <Zap className="h-5 w-5 mr-2" />
+                Start Creating Now
+              </Button>
+            </Link>
+            <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+              <div className="flex items-center space-x-1">
+                <Twitter className="h-4 w-4 text-blue-400" />
+                <span>X/Twitter</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <div className="w-4 h-4 bg-blue-600 rounded flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">in</span>
+                </div>
+                <span>LinkedIn</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <MessageSquare className="h-4 w-4 text-orange-500" />
+                <span>Reddit</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+      
       {/* Stats Grid */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -234,6 +330,119 @@ export default function DashboardHome() {
             <div className="text-sm text-muted-foreground">{stat.label}</div>
           </motion.div>
         ))}
+      </motion.div>
+
+      {/* Business Profile Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+        className="glassmorphism rounded-xl p-6"
+      >
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20">
+              <Building className="h-5 w-5 text-purple-400" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold font-sora">Business Profile</h3>
+              <p className="text-sm text-muted-foreground">
+                {businessProfile?.isSetupComplete 
+                  ? 'AI personalization enabled' 
+                  : 'Set up your profile for personalized AI content'
+                }
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="glassmorphism"
+            onClick={() => setShowBusinessSetup(true)}
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            {businessProfile?.isSetupComplete ? 'Edit' : 'Setup'}
+          </Button>
+        </div>
+
+        {businessProfile?.isSetupComplete ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="glassmorphism-dark rounded-lg p-4">
+              <div className="flex items-center space-x-2 mb-2">
+                <Building className="h-4 w-4 text-purple-400" />
+                <span className="text-sm font-semibold">Business</span>
+              </div>
+              <div className="text-sm text-muted-foreground">{businessProfile.businessName || 'Not set'}</div>
+              <div className="text-xs text-muted-foreground">{businessProfile.industry || 'Industry not set'}</div>
+            </div>
+            
+            <div className="glassmorphism-dark rounded-lg p-4">
+              <div className="flex items-center space-x-2 mb-2">
+                <Globe className="h-4 w-4 text-blue-400" />
+                <span className="text-sm font-semibold">Website</span>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {businessProfile.website ? (
+                  <a 
+                    href={businessProfile.website.startsWith('http') ? businessProfile.website : `https://${businessProfile.website}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-blue-400 transition-colors"
+                  >
+                    {businessProfile.website}
+                  </a>
+                ) : 'Not set'}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {businessProfile.lastScrapedAt && (
+                  `Analyzed ${new Date(businessProfile.lastScrapedAt).toLocaleDateString()}`
+                )}
+              </div>
+            </div>
+            
+            <div className="glassmorphism-dark rounded-lg p-4">
+              <div className="flex items-center space-x-2 mb-2">
+                <Target className="h-4 w-4 text-green-400" />
+                <span className="text-sm font-semibold">Audience</span>
+              </div>
+              <div className="text-sm text-muted-foreground">{businessProfile.targetAudience || 'Not set'}</div>
+              <div className="text-xs text-muted-foreground">{businessProfile.businessModel || 'Model not set'}</div>
+            </div>
+            
+            <div className="glassmorphism-dark rounded-lg p-4">
+              <div className="flex items-center space-x-2 mb-2">
+                <Rocket className="h-4 w-4 text-pink-400" />
+                <span className="text-sm font-semibold">Goals</span>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {businessProfile.goals && businessProfile.goals.length > 0 
+                  ? `${businessProfile.goals.length} active goals`
+                  : 'No goals set'
+                }
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {businessProfile.mainChallenges && businessProfile.mainChallenges.length > 0 
+                  ? `${businessProfile.mainChallenges.length} challenges tracked`
+                  : 'No challenges tracked'
+                }
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <Building className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+            <p className="text-sm text-muted-foreground mb-4">
+              Set up your business profile to get personalized AI content that speaks directly to your audience and industry.
+            </p>
+            <Button
+              onClick={() => setShowBusinessSetup(true)}
+              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+            >
+              <Building className="h-4 w-4 mr-2" />
+              Set Up Business Profile
+            </Button>
+          </div>
+        )}
       </motion.div>
 
       {/* Main Content Grid */}
@@ -295,13 +504,27 @@ export default function DashboardHome() {
               ))
             ) : (
               <div className="text-center py-8">
-                <Rocket className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
-                <p className="text-sm text-muted-foreground mb-4">No active campaigns</p>
+                <div className="relative mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-3 neon-glow">
+                    <Rocket className="h-8 w-8 text-white" />
+                  </div>
+                  <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+                    <Zap className="h-3 w-3 text-white" />
+                  </div>
+                </div>
+                <h4 className="font-semibold mb-2">Ready to Go Viral?</h4>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Chat with AI to create viral content for X/Twitter, LinkedIn, and Reddit in seconds
+                </p>
                 <Link href="/dashboard/generate">
-                  <Button size="sm" variant="outline" className="glassmorphism-dark">
-                    Create Your First Campaign
+                  <Button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white neon-glow">
+                    <Zap className="h-4 w-4 mr-2" />
+                    Start Creating Content
                   </Button>
                 </Link>
+                <p className="text-xs text-muted-foreground mt-2">
+                  New ChatGPT-style interface with instant posting links
+                </p>
               </div>
             )}
           </div>
@@ -456,6 +679,22 @@ export default function DashboardHome() {
           )}
         </div>
       </motion.div>
+
+      {/* Business Setup Modal */}
+      {showBusinessSetup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowBusinessSetup(false)}
+          />
+          <div className="relative glassmorphism rounded-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-white/20">
+            <BusinessSetup 
+              onComplete={handleBusinessSetupComplete}
+              onSkip={handleSkipBusinessSetup}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

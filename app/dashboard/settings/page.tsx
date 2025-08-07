@@ -6,14 +6,10 @@ import {
   User, 
   Key, 
   Bell, 
-  Palette, 
   Shield, 
   Save,
   Eye,
-  EyeOff,
-  Moon,
-  Sun,
-  Monitor
+  EyeOff
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,7 +17,6 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useDashboardStore } from '@/lib/store/dashboard-store';
-import { useTheme } from 'next-themes';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -31,14 +26,12 @@ const settingsSections = [
   { id: 'billing', label: 'Billing', icon: Key },
   { id: 'api', label: 'API Keys', icon: Key },
   { id: 'notifications', label: 'Notifications', icon: Bell },
-  { id: 'appearance', label: 'Appearance', icon: Palette },
   { id: 'security', label: 'Security', icon: Shield },
 ];
 
 export default function SettingsPage() {
   const { data: session } = useSession();
   const { profile, setProfile } = useDashboardStore();
-  const { theme, setTheme } = useTheme();
   const [activeSection, setActiveSection] = useState('profile');
   const [showApiKey, setShowApiKey] = useState(false);
   const [formData, setFormData] = useState({
@@ -287,37 +280,7 @@ export default function SettingsPage() {
           </div>
         );
 
-      case 'appearance':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Appearance Settings</h3>
-              <div className="space-y-4">
-                <div>
-                  <Label>Theme</Label>
-                  <div className="grid grid-cols-3 gap-3 mt-2">
-                    {[
-                      { id: 'light', label: 'Light', icon: Sun },
-                      { id: 'dark', label: 'Dark', icon: Moon },
-                      { id: 'system', label: 'System', icon: Monitor },
-                    ].map((themeOption) => (
-                      <button
-                        key={themeOption.id}
-                        onClick={() => setTheme(themeOption.id)}
-                        className={`glassmorphism-dark rounded-lg p-4 text-center transition-all hover:bg-white/5 ${
-                          theme === themeOption.id ? 'border-2 border-purple-500/50' : ''
-                        }`}
-                      >
-                        <themeOption.icon className="h-6 w-6 mx-auto mb-2" />
-                        <div className="text-sm font-medium">{themeOption.label}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
+
 
       case 'security':
         return (

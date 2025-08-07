@@ -1,14 +1,9 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
 import { FileText, AlertTriangle, Shield, Users } from 'lucide-react';
 import { Navigation } from '@/components/navigation/navigation';
 import { Footer } from '@/components/sections/footer';
-
-export const metadata = {
-  title: 'Terms of Service - LaunchPilot',
-  description: 'Terms and conditions for using LaunchPilot AI marketing platform.',
-};
+import { motion } from 'framer-motion';
 
 export default function TermsPage() {
   return (

@@ -13,7 +13,13 @@ import {
   MousePointer,
   Heart,
   MessageSquare,
-  RefreshCw
+  RefreshCw,
+  Linkedin,
+  Instagram,
+  Plus,
+  Target,
+  Zap,
+  Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -26,6 +32,8 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 
 const channels = [
   { id: 'twitter', label: 'Twitter', icon: Twitter, color: 'from-blue-500 to-cyan-500' },
+  { id: 'linkedin', label: 'LinkedIn', icon: Linkedin, color: 'from-blue-600 to-blue-700' },
+  { id: 'instagram', label: 'Instagram', icon: Instagram, color: 'from-pink-500 to-purple-500' },
   { id: 'email', label: 'Email', icon: Mail, color: 'from-pink-500 to-rose-500' },
   { id: 'blog', label: 'Blog', icon: FileText, color: 'from-green-500 to-emerald-500' },
 ];
@@ -64,21 +72,33 @@ export default function AnalyticsPage() {
     switch (channel) {
       case 'twitter':
         return [
-          { icon: Eye, label: 'Impressions', value: todayStats.twitter.impressions.toLocaleString(), change: `+${weeklyGrowth.twitter.impressions}%`, color: 'text-blue-400' },
-          { icon: Heart, label: 'Engagement', value: todayStats.twitter.engagement.toLocaleString(), change: `+${weeklyGrowth.twitter.engagement}%`, color: 'text-red-400' },
-          { icon: Users, label: 'Followers', value: todayStats.twitter.followers.toLocaleString(), change: `+${weeklyGrowth.twitter.followers}%`, color: 'text-green-400' },
+          { icon: Eye, label: 'Impressions', value: todayStats.twitter?.impressions?.toLocaleString() || '0', change: `+${weeklyGrowth.twitter?.impressions || 0}%`, color: 'text-blue-400' },
+          { icon: Heart, label: 'Engagement', value: todayStats.twitter?.engagement?.toLocaleString() || '0', change: `+${weeklyGrowth.twitter?.engagement || 0}%`, color: 'text-red-400' },
+          { icon: Users, label: 'Followers', value: todayStats.twitter?.followers?.toLocaleString() || '0', change: `+${weeklyGrowth.twitter?.followers || 0}%`, color: 'text-green-400' },
+        ];
+      case 'linkedin':
+        return [
+          { icon: Eye, label: 'Impressions', value: '8,240', change: '+18%', color: 'text-blue-400' },
+          { icon: Heart, label: 'Reactions', value: '342', change: '+25%', color: 'text-red-400' },
+          { icon: Users, label: 'Connections', value: '1,284', change: '+12%', color: 'text-green-400' },
+        ];
+      case 'instagram':
+        return [
+          { icon: Eye, label: 'Reach', value: '12,450', change: '+22%', color: 'text-pink-400' },
+          { icon: Heart, label: 'Likes', value: '892', change: '+15%', color: 'text-red-400' },
+          { icon: Users, label: 'Followers', value: '2,156', change: '+8%', color: 'text-purple-400' },
         ];
       case 'email':
         return [
-          { icon: Mail, label: 'Opens', value: todayStats.email.opens.toLocaleString(), change: `+${weeklyGrowth.email.opens}%`, color: 'text-pink-400' },
-          { icon: MousePointer, label: 'Clicks', value: todayStats.email.clicks.toLocaleString(), change: `+${weeklyGrowth.email.clicks}%`, color: 'text-purple-400' },
-          { icon: Users, label: 'Subscribers', value: todayStats.email.subscribers.toLocaleString(), change: `+${weeklyGrowth.email.subscribers}%`, color: 'text-green-400' },
+          { icon: Mail, label: 'Opens', value: todayStats.email?.opens?.toLocaleString() || '0', change: `+${weeklyGrowth.email?.opens || 0}%`, color: 'text-pink-400' },
+          { icon: MousePointer, label: 'Clicks', value: todayStats.email?.clicks?.toLocaleString() || '0', change: `+${weeklyGrowth.email?.clicks || 0}%`, color: 'text-purple-400' },
+          { icon: Users, label: 'Subscribers', value: todayStats.email?.subscribers?.toLocaleString() || '0', change: `+${weeklyGrowth.email?.subscribers || 0}%`, color: 'text-green-400' },
         ];
       case 'blog':
         return [
-          { icon: Eye, label: 'Views', value: todayStats.blog.views.toLocaleString(), change: `+${weeklyGrowth.blog.views}%`, color: 'text-green-400' },
-          { icon: MessageSquare, label: 'Shares', value: todayStats.blog.shares.toLocaleString(), change: `+${weeklyGrowth.blog.shares}%`, color: 'text-blue-400' },
-          { icon: TrendingUp, label: 'Conversions', value: todayStats.blog.conversions.toLocaleString(), change: `+${weeklyGrowth.blog.conversions}%`, color: 'text-purple-400' },
+          { icon: Eye, label: 'Views', value: todayStats.blog?.views?.toLocaleString() || '0', change: `+${weeklyGrowth.blog?.views || 0}%`, color: 'text-green-400' },
+          { icon: MessageSquare, label: 'Shares', value: todayStats.blog?.shares?.toLocaleString() || '0', change: `+${weeklyGrowth.blog?.shares || 0}%`, color: 'text-blue-400' },
+          { icon: TrendingUp, label: 'Conversions', value: todayStats.blog?.conversions?.toLocaleString() || '0', change: `+${weeklyGrowth.blog?.conversions || 0}%`, color: 'text-purple-400' },
         ];
       default:
         return [];
@@ -107,7 +127,7 @@ export default function AnalyticsPage() {
     });
 
     return {
-      labels: channelData[Object.keys(channelData)[0] as any]?.map((d: any) => 
+      labels: (channelData as any)[Object.keys(channelData)[0]]?.map((d: any) => 
         new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
       ) || [],
       datasets,
@@ -249,7 +269,21 @@ export default function AnalyticsPage() {
             {selectedChannelData?.label} Performance
           </h3>
           <div className="text-sm text-green-400">
-            ↗ +{weeklyGrowth[selectedChannel as keyof typeof weeklyGrowth]?.impressions || 0}% this week
+            ↗ +{(() => {
+              const channelData = weeklyGrowth[selectedChannel as keyof typeof weeklyGrowth];
+              if (!channelData) return 0;
+              
+              switch (selectedChannel) {
+                case 'twitter':
+                  return (channelData as any).impressions || 0;
+                case 'email':
+                  return (channelData as any).opens || 0;
+                case 'blog':
+                  return (channelData as any).views || 0;
+                default:
+                  return 0;
+              }
+            })()}% this week
           </div>
         </div>
         
@@ -306,45 +340,83 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* Recommendations */}
+        {/* AI-Powered Insights */}
         <div className="glassmorphism rounded-xl p-6">
-          <h3 className="text-lg font-bold font-sora mb-4">AI Recommendations</h3>
+          <div className="flex items-center gap-2 mb-4">
+            <Sparkles className="h-5 w-5 text-purple-400" />
+            <h3 className="text-lg font-bold font-sora">AI Insights</h3>
+          </div>
           <div className="space-y-4">
             {[
               {
-                title: 'Optimize posting time',
-                description: 'Your Twitter engagement is 40% higher at 2 PM EST',
-                action: 'Schedule tweets',
-                priority: 'high'
+                title: 'Content Performance Prediction',
+                description: 'Your next LinkedIn post has 87% chance of high engagement',
+                metric: '87%',
+                action: 'View details',
+                type: 'prediction',
+                icon: Target
               },
               {
-                title: 'Email subject lines',
-                description: 'Try shorter subject lines (under 50 characters)',
-                action: 'Update templates',
-                priority: 'medium'
+                title: 'Optimal Posting Schedule',
+                description: `Best ${selectedChannel} posting times: Weekdays 10-11 AM`,
+                metric: '+40%',
+                action: 'Apply schedule',
+                type: 'timing',
+                icon: Zap
               },
               {
-                title: 'Content frequency',
-                description: 'Increase blog posting to 2x per week for better SEO',
-                action: 'Plan content',
-                priority: 'low'
+                title: 'Content Gap Analysis',
+                description: 'Your audience wants more educational content',
+                metric: '73%',
+                action: 'Generate ideas',
+                type: 'content',
+                icon: TrendingUp
               },
-            ].map((rec, index) => (
+              {
+                title: 'Engagement Boost Tip',
+                description: 'Add more visual content for +25% engagement',
+                metric: '+25%',
+                action: 'Create visuals',
+                type: 'strategy',
+                icon: Eye
+              },
+            ].map((insight, index) => (
               <div key={index} className="glassmorphism-dark rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-semibold text-sm">{rec.title}</h4>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    rec.priority === 'high' ? 'bg-red-500/20 text-red-400' :
-                    rec.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                    'bg-gray-500/20 text-gray-400'
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-start gap-2">
+                    <insight.icon className={`h-4 w-4 mt-0.5 ${
+                      insight.type === 'prediction' ? 'text-purple-400' :
+                      insight.type === 'timing' ? 'text-blue-400' :
+                      insight.type === 'content' ? 'text-green-400' :
+                      'text-orange-400'
+                    }`} />
+                    <div>
+                      <h4 className="font-semibold text-sm">{insight.title}</h4>
+                      <p className="text-xs text-muted-foreground mt-1">{insight.description}</p>
+                    </div>
+                  </div>
+                  <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                    insight.type === 'prediction' ? 'bg-purple-500/20 text-purple-400' :
+                    insight.type === 'timing' ? 'bg-blue-500/20 text-blue-400' :
+                    insight.type === 'content' ? 'bg-green-500/20 text-green-400' :
+                    'bg-orange-500/20 text-orange-400'
                   }`}>
-                    {rec.priority}
+                    {insight.metric}
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground mb-3">{rec.description}</p>
-                <Button size="sm" variant="outline" className="glassmorphism text-xs">
-                  {rec.action}
-                </Button>
+                <div className="flex justify-between items-center mt-3">
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    insight.type === 'prediction' ? 'bg-purple-500/10 text-purple-400' :
+                    insight.type === 'timing' ? 'bg-blue-500/10 text-blue-400' :
+                    insight.type === 'content' ? 'bg-green-500/10 text-green-400' :
+                    'bg-orange-500/10 text-orange-400'
+                  }`}>
+                    {insight.type}
+                  </span>
+                  <Button size="sm" variant="outline" className="glassmorphism text-xs h-6">
+                    {insight.action}
+                  </Button>
+                </div>
               </div>
             ))}
           </div>

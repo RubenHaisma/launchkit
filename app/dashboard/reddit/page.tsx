@@ -3,14 +3,13 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Twitter,
+  MessageSquare,
   Send,
-  Calendar,
   TrendingUp,
   Users,
   Heart,
   MessageCircle,
-  Repeat2,
+  ArrowUp,
   Plus,
   Sparkles,
   ExternalLink,
@@ -24,16 +23,17 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-export default function TwitterPage() {
-  const [tweetContent, setTweetContent] = useState('');
-  const [isScheduling, setIsScheduling] = useState(false);
+export default function RedditPage() {
+  const [postContent, setPostContent] = useState('');
+  const [postTitle, setPostTitle] = useState('');
   const [aiTopic, setAiTopic] = useState('');
-  const [tweetStyle, setTweetStyle] = useState('');
+  const [postStyle, setPostStyle] = useState('');
+  const [targetSubreddit, setTargetSubreddit] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedTweets, setGeneratedTweets] = useState<string[]>([]);
+  const [generatedPosts, setGeneratedPosts] = useState<Array<{title: string, content: string}>>([]);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
-  const generateTweets = async () => {
+  const generatePosts = async () => {
     if (!aiTopic.trim()) return;
     
     setIsGenerating(true);
@@ -42,19 +42,27 @@ export default function TwitterPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          type: 'twitter',
+          type: 'reddit',
           topic: aiTopic,
-          style: tweetStyle || 'engaging',
+          style: postStyle || 'engaging',
+          subreddit: targetSubreddit,
           count: 3
         })
       });
       
       if (response.ok) {
         const data = await response.json();
-        setGeneratedTweets(data.content || []);
+        // Parse content into title and body
+        const posts = data.content.map((content: string) => {
+          const lines = content.split('\n').filter(line => line.trim());
+          const title = lines[0]?.replace(/^(Title:|#\s*)/, '') || content.substring(0, 100);
+          const body = lines.slice(1).join('\n').trim() || content;
+          return { title, content: body };
+        });
+        setGeneratedPosts(posts);
       }
     } catch (error) {
-      console.error('Error generating tweets:', error);
+      console.error('Error generating posts:', error);
     } finally {
       setIsGenerating(false);
     }
@@ -66,27 +74,31 @@ export default function TwitterPage() {
     setTimeout(() => setCopiedIndex(null), 2000);
   };
 
-  const createTwitterLink = (text: string) => {
-    const encodedText = encodeURIComponent(text);
-    return `https://twitter.com/intent/tweet?text=${encodedText}`;
+  const createRedditLink = (title: string, content: string, subreddit?: string) => {
+    const sub = subreddit || 'findareddit';
+    const encodedTitle = encodeURIComponent(title);
+    const encodedContent = encodeURIComponent(content);
+    return `https://www.reddit.com/r/${sub}/submit?title=${encodedTitle}&text=${encodedContent}`;
   };
 
   const stats = [
-    { label: 'Tweets This Week', value: '23', change: '+5', icon: Twitter, color: 'text-blue-400' },
-    { label: 'Total Impressions', value: '12.4K', change: '+18%', icon: TrendingUp, color: 'text-green-400' },
-    { label: 'Followers Gained', value: '+47', change: '+12%', icon: Users, color: 'text-purple-400' },
-    { label: 'Engagement Rate', value: '4.2%', change: '+0.8%', icon: Heart, color: 'text-pink-400' },
+    { label: 'Posts This Week', value: '8', change: '+2', icon: MessageSquare, color: 'text-orange-400' },
+    { label: 'Total Karma', value: '1.2K', change: '+145', icon: TrendingUp, color: 'text-green-400' },
+    { label: 'Active Communities', value: '12', change: '+3', icon: Users, color: 'text-purple-400' },
+    { label: 'Avg. Upvotes', value: '24', change: '+8', icon: ArrowUp, color: 'text-blue-400' },
   ];
 
-  const recentTweets = [
+  const recentPosts = [
     {
-      content: "🚀 Just shipped a new feature for LaunchPilot! AI now generates platform-specific content in seconds. What would you build with extra time?",
-      stats: { likes: 24, retweets: 8, replies: 5 },
-      time: '2 hours ago'
+      title: "How LaunchPilot helped me automate my content strategy",
+      subreddit: "r/entrepreneur",
+      stats: { upvotes: 42, comments: 12 },
+      time: '4 hours ago'
     },
     {
-      content: "The biggest mistake indie hackers make? Spending 80% of time building, 20% marketing. Should be 50/50. LaunchPilot helps you do marketing right.",
-      stats: { likes: 156, retweets: 42, replies: 18 },
+      title: "The hidden costs of manual content creation for indie hackers",
+      subreddit: "r/indiehackers",
+      stats: { upvotes: 89, comments: 23 },
       time: '1 day ago'
     }
   ];
@@ -99,16 +111,16 @@ export default function TwitterPage() {
         className="flex flex-col md:flex-row md:items-center justify-between"
       >
         <div>
-          <h1 className="text-3xl font-bold font-sora mb-2">Twitter Management</h1>
+          <h1 className="text-3xl font-bold font-sora mb-2">Reddit Management</h1>
           <p className="text-muted-foreground">
-            Create, schedule, and manage your Twitter presence
+            Create engaging posts and grow your presence across Reddit communities
           </p>
         </div>
         
         <div className="flex gap-3 mt-4 md:mt-0">
-          <Button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white">
+          <Button className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white">
             <Plus className="h-4 w-4 mr-2" />
-            Compose Tweet
+            New Post
           </Button>
         </div>
       </motion.div>
@@ -124,10 +136,10 @@ export default function TwitterPage() {
           <Card key={stat.label} className="glassmorphism p-6">
             <div className="flex items-center justify-between mb-4">
               <div className={`p-2 rounded-lg bg-gradient-to-r ${
-                stat.color === 'text-blue-400' ? 'from-blue-500/20 to-blue-600/20' :
+                stat.color === 'text-orange-400' ? 'from-orange-500/20 to-red-600/20' :
                 stat.color === 'text-green-400' ? 'from-green-500/20 to-green-600/20' :
                 stat.color === 'text-purple-400' ? 'from-purple-500/20 to-purple-600/20' :
-                'from-pink-500/20 to-pink-600/20'
+                'from-blue-500/20 to-blue-600/20'
               }`}>
                 <stat.icon className={`h-5 w-5 ${stat.color}`} />
               </div>
@@ -141,7 +153,7 @@ export default function TwitterPage() {
         ))}
       </motion.div>
 
-      {/* AI Tweet Generator */}
+      {/* AI Post Generator */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -150,59 +162,70 @@ export default function TwitterPage() {
       >
         <div className="flex items-center gap-2 mb-4">
           <Sparkles className="h-5 w-5 text-purple-400" />
-          <h3 className="text-lg font-semibold">AI Tweet Generator</h3>
+          <h3 className="text-lg font-semibold">AI Reddit Post Generator</h3>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <Input
-            placeholder="What topic should I tweet about?"
+            placeholder="What topic should I post about?"
             value={aiTopic}
             onChange={(e) => setAiTopic(e.target.value)}
             className="bg-black/20 border-white/10"
           />
-          <Select value={tweetStyle} onValueChange={setTweetStyle}>
+          <Select value={postStyle} onValueChange={setPostStyle}>
             <SelectTrigger className="bg-black/20 border-white/10">
-              <SelectValue placeholder="Select tweet style" />
+              <SelectValue placeholder="Select post style" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="engaging">Engaging & Fun</SelectItem>
-              <SelectItem value="professional">Professional</SelectItem>
-              <SelectItem value="educational">Educational</SelectItem>
-              <SelectItem value="inspirational">Inspirational</SelectItem>
-              <SelectItem value="controversial">Thought-Provoking</SelectItem>
-              <SelectItem value="personal">Personal Story</SelectItem>
+              <SelectItem value="discussion">Discussion Starter</SelectItem>
+              <SelectItem value="educational">Educational/Guide</SelectItem>
+              <SelectItem value="personal">Personal Experience</SelectItem>
+              <SelectItem value="question">Ask Reddit</SelectItem>
+              <SelectItem value="showcase">Project Showcase</SelectItem>
+              <SelectItem value="news">News/Update</SelectItem>
             </SelectContent>
           </Select>
+          <Input
+            placeholder="Target subreddit (optional)"
+            value={targetSubreddit}
+            onChange={(e) => setTargetSubreddit(e.target.value)}
+            className="bg-black/20 border-white/10"
+          />
         </div>
 
         <Button 
-          onClick={generateTweets}
+          onClick={generatePosts}
           disabled={!aiTopic.trim() || isGenerating}
-          className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 w-full mb-6"
+          className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 w-full mb-6"
         >
           {isGenerating ? (
             <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
           ) : (
             <Sparkles className="h-4 w-4 mr-2" />
           )}
-          {isGenerating ? 'Generating Tweets...' : 'Generate AI Tweets'}
+          {isGenerating ? 'Generating Posts...' : 'Generate AI Reddit Posts'}
         </Button>
 
-        {generatedTweets.length > 0 && (
+        {generatedPosts.length > 0 && (
           <div className="space-y-4">
-            <h4 className="text-sm font-semibold text-muted-foreground">Generated Tweet Options:</h4>
-            {generatedTweets.map((tweet, index) => (
+            <h4 className="text-sm font-semibold text-muted-foreground">Generated Post Options:</h4>
+            {generatedPosts.map((post, index) => (
               <div key={index} className="bg-black/20 rounded-lg p-4 space-y-3">
-                <p className="text-sm leading-relaxed">{tweet}</p>
+                <div className="space-y-2">
+                  <div className="text-sm font-semibold text-orange-400">Title:</div>
+                  <p className="text-sm leading-relaxed font-medium">{post.title}</p>
+                  <div className="text-sm font-semibold text-orange-400">Content:</div>
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{post.content}</p>
+                </div>
                 <div className="flex items-center justify-between">
                   <div className="text-xs text-muted-foreground">
-                    {tweet.length}/280 characters
+                    Title: {post.title.length}/300 • Content: {post.content.length} chars
                   </div>
                   <div className="flex gap-2">
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => copyToClipboard(tweet, index)}
+                      onClick={() => copyToClipboard(`${post.title}\n\n${post.content}`, index)}
                       className="glassmorphism h-8"
                     >
                       <Copy className="h-3 w-3 mr-1" />
@@ -210,11 +233,11 @@ export default function TwitterPage() {
                     </Button>
                     <Button
                       size="sm"
-                      onClick={() => window.open(createTwitterLink(tweet), '_blank')}
-                      className="bg-blue-500 hover:bg-blue-600 h-8"
+                      onClick={() => window.open(createRedditLink(post.title, post.content, targetSubreddit), '_blank')}
+                      className="bg-orange-500 hover:bg-orange-600 h-8"
                     >
                       <ExternalLink className="h-3 w-3 mr-1" />
-                      Post on X
+                      Post on Reddit
                     </Button>
                   </div>
                 </div>
@@ -224,7 +247,7 @@ export default function TwitterPage() {
         )}
       </motion.div>
 
-      {/* Manual Tweet Composer */}
+      {/* Manual Post Composer */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -233,67 +256,72 @@ export default function TwitterPage() {
       >
         <h3 className="text-lg font-semibold mb-4">Manual Compose</h3>
         <div className="space-y-4">
+          <Input
+            placeholder="Post title"
+            value={postTitle}
+            onChange={(e) => setPostTitle(e.target.value)}
+            className="bg-black/20 border-white/10"
+          />
           <Textarea
-            placeholder="What's happening?"
-            value={tweetContent}
-            onChange={(e) => setTweetContent(e.target.value)}
+            placeholder="What's on your mind? Share with the community..."
+            value={postContent}
+            onChange={(e) => setPostContent(e.target.value)}
             className="min-h-[120px] bg-black/20 border-white/10"
           />
           <div className="flex items-center justify-between">
             <div className="text-sm text-muted-foreground">
-              {tweetContent.length}/280 characters
+              Title: {postTitle.length}/300 • Content: {postContent.length} characters
             </div>
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                onClick={() => copyToClipboard(tweetContent, -1)}
-                disabled={!tweetContent.trim()}
+                onClick={() => copyToClipboard(`${postTitle}\n\n${postContent}`, -1)}
+                disabled={!postTitle.trim() && !postContent.trim()}
                 className="glassmorphism"
               >
                 <Copy className="h-4 w-4 mr-2" />
                 Copy
               </Button>
               <Button
-                onClick={() => window.open(createTwitterLink(tweetContent), '_blank')}
-                disabled={!tweetContent.trim()}
-                className="bg-blue-500 hover:bg-blue-600"
+                onClick={() => window.open(createRedditLink(postTitle, postContent), '_blank')}
+                disabled={!postTitle.trim()}
+                className="bg-orange-500 hover:bg-orange-600"
               >
                 <ExternalLink className="h-4 w-4 mr-2" />
-                Post on X
+                Post on Reddit
               </Button>
             </div>
           </div>
         </div>
       </motion.div>
 
-      {/* Recent Tweets */}
+      {/* Recent Posts */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
         className="glassmorphism rounded-xl p-6"
       >
-        <h3 className="text-lg font-semibold mb-6">Recent Tweets</h3>
+        <h3 className="text-lg font-semibold mb-6">Recent Posts</h3>
         <div className="space-y-4">
-          {recentTweets.map((tweet, index) => (
+          {recentPosts.map((post, index) => (
             <div key={index} className="bg-black/20 rounded-lg p-4">
-              <p className="text-sm mb-3 leading-relaxed">{tweet.content}</p>
+              <div className="flex items-start justify-between mb-2">
+                <h4 className="text-sm font-medium leading-relaxed flex-1 mr-4">{post.title}</h4>
+                <Badge variant="outline" className="text-xs">{post.subreddit}</Badge>
+              </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4 text-xs text-muted-foreground">
                   <div className="flex items-center space-x-1">
-                    <Heart className="h-3 w-3" />
-                    <span>{tweet.stats.likes}</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Repeat2 className="h-3 w-3" />
-                    <span>{tweet.stats.retweets}</span>
+                    <ArrowUp className="h-3 w-3" />
+                    <span>{post.stats.upvotes}</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <MessageCircle className="h-3 w-3" />
-                    <span>{tweet.stats.replies}</span>
+                    <span>{post.stats.comments}</span>
                   </div>
                 </div>
-                <span className="text-xs text-muted-foreground">{tweet.time}</span>
+                <span className="text-xs text-muted-foreground">{post.time}</span>
               </div>
             </div>
           ))}

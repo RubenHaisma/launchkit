@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import { 
   Twitter, 
   Calendar, 
@@ -22,6 +21,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Navigation } from '@/components/navigation/navigation';
 import { Footer } from '@/components/sections/footer';
+import { motion } from 'framer-motion';
 
 const tweetIdeas = [
   {
@@ -174,13 +174,13 @@ export default function TwitterPage() {
                     <div className="space-y-6">
                       <div className="flex space-x-4">
                         <Button
-                          variant={selectedTab === 'tweet' ? 'default' : 'outline'}
+                          variant={selectedTab === 'generate' ? 'default' : 'outline'}
                           className="flex-1 glassmorphism"
                         >
                           Single Tweet
                         </Button>
                         <Button
-                          variant={selectedTab === 'thread' ? 'default' : 'outline'}
+                          variant={selectedTab === 'generate' ? 'default' : 'outline'}
                           className="flex-1 glassmorphism"
                         >
                           Thread

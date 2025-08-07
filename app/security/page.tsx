@@ -1,14 +1,9 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
 import { Shield, Lock, Key, AlertTriangle, CheckCircle, Mail } from 'lucide-react';
 import { Navigation } from '@/components/navigation/navigation';
 import { Footer } from '@/components/sections/footer';
-
-export const metadata = {
-  title: 'Security - LaunchPilot',
-  description: 'Learn how LaunchPilot keeps your data secure and protected.',
-};
+import { motion } from 'framer-motion';
 
 export default function SecurityPage() {
   return (

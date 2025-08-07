@@ -3,47 +3,22 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { deductCredits } from '@/lib/credits'
+import { generateContent, ContentType, ToneType, AudienceType } from '@/lib/ai'
 
 interface GenerateRequest {
-  prompt: string;
-  type: 'tweet' | 'email' | 'blog' | 'launch';
-  tone: string;
-  audience: string;
+  prompt?: string;
+  topic?: string;
+  style?: string;
+  count?: number;
+  type: ContentType | string;
+  tone?: ToneType;
+  audience?: AudienceType;
+  platform?: string;
+  additionalContext?: string;
+  keywords?: string[];
+  callToAction?: string;
+  maxLength?: number;
 }
-
-const contentTemplates = {
-  tweet: {
-    professional: [
-      "🚀 Just discovered something that's changing how {audience} work:\n\n{prompt}\n\nHere's why this matters:\n\n• Saves 20+ hours/week\n• Increases productivity by 3x\n• Works with existing tools\n\nWhat's your biggest time-waster? 👇",
-      "Unpopular opinion for {audience}:\n\n{prompt}\n\nMost people get this wrong because they focus on features instead of outcomes.\n\nThe real game-changer? Understanding your users' actual pain points.\n\nWhat do you think? 🤔",
-    ],
-    casual: [
-      "yo {audience} 👋\n\njust tried {prompt} and it's actually insane\n\nwent from spending 20 hours on marketing to like 2 hours\n\nthe AI literally handles everything:\n→ content creation\n→ social posts\n→ email campaigns\n\nanyone else using AI for their startup?",
-      "real talk {audience}...\n\n{prompt} just saved me from another all-nighter\n\nused to spend forever writing copy\nnow it takes 5 minutes\n\nfeels like cheating but in a good way 😅\n\nwhat tools are you using to stay sane?",
-    ],
-  },
-  email: {
-    professional: [
-      "Subject: Quick question about {{company}}\n\nHi {{firstName}},\n\nI noticed you're working in the {audience} space and thought you might find this interesting.\n\n{prompt}\n\nMost {audience} I talk to struggle with this exact challenge. We've helped similar companies:\n\n• Reduce manual work by 70%\n• Increase conversion rates by 2.5x\n• Save 15+ hours per week\n\nWould you be interested in a quick 15-minute demo to see how this could help {{company}}?\n\nBest regards,\n[Your name]",
-    ],
-    casual: [
-      "Subject: loved your recent post about {audience}\n\nHey {{firstName}}!\n\nJust saw your post about challenges in the {audience} space - totally resonated with me.\n\n{prompt}\n\nI've been working on something that might help with exactly what you mentioned. It's helped me go from 20 hours/week on marketing to just 2 hours.\n\nWant to check it out? No pressure, just thought it might be useful for {{company}}.\n\nTalk soon!\n[Your name]",
-    ],
-  },
-  blog: {
-    professional: [
-      "# How {prompt} is Revolutionizing the {audience} Industry\n\n## The Challenge\n\nIn today's competitive landscape, {audience} face unprecedented challenges. The traditional approaches that worked five years ago are no longer sufficient.\n\n## The Solution\n\n{prompt} represents a fundamental shift in how we approach this problem.\n\n### Key Benefits:\n- Increased efficiency by 300%\n- Reduced operational costs\n- Improved user satisfaction\n- Scalable growth potential\n\n## Implementation Strategy\n\n1. **Assessment Phase**: Evaluate current processes\n2. **Planning Phase**: Develop implementation roadmap\n3. **Execution Phase**: Deploy solution systematically\n4. **Optimization Phase**: Continuous improvement\n\n## Results\n\nEarly adopters have seen remarkable results:\n- 70% reduction in manual work\n- 2.5x increase in productivity\n- 90% user satisfaction rate\n\n## Conclusion\n\nThe future belongs to {audience} who embrace innovation. {prompt} isn't just a tool—it's a competitive advantage.\n\nReady to transform your workflow? Get started today.",
-    ],
-  },
-  launch: {
-    professional: [
-      "🚀 **Launching Today: {prompt}**\n\n**Tagline:** The AI-powered solution that transforms how {audience} work\n\n**The Problem:**\nMost {audience} spend 60% of their time on repetitive tasks instead of strategic work.\n\n**Our Solution:**\n{prompt} uses advanced AI to automate workflows, generate content, and optimize processes.\n\n**Key Features:**\n✅ Intelligent automation\n✅ Seamless integrations\n✅ Real-time analytics\n✅ 24/7 AI assistance\n\n**Early Results:**\n• 300% productivity increase\n• 70% reduction in manual work\n• 95% user satisfaction\n• $2M+ in time savings for users\n\n**Special Launch Offer:**\n🎁 50% off first 3 months\n🎁 Free onboarding & setup\n🎁 Priority support\n\n**Why Now?**\nThe future of work is here. Join 10,000+ {audience} who've already transformed their productivity.\n\n**Get Started:** [Launch Link]\n\n#ProductHunt #AI #Productivity #{audience}",
-    ],
-  },
-};
-
-// Simulate AI processing delay
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export async function POST(request: NextRequest) {
   try {
@@ -54,10 +29,77 @@ export async function POST(request: NextRequest) {
     }
 
     const body: GenerateRequest = await request.json();
-    const { prompt, type, tone, audience } = body;
+    const { 
+      prompt, 
+      topic,
+      style,
+      count = 1,
+      type, 
+      tone, 
+      audience, 
+      platform,
+      additionalContext,
+      keywords,
+      callToAction,
+      maxLength 
+    } = body;
 
-    // Check and deduct credits
-    const hasCredits = await deductCredits(session.user.id, 1)
+    // Handle new social media formats
+    let finalPrompt = prompt || '';
+    let finalTone = tone;
+    let finalType = type as ContentType;
+    let finalPlatform = platform;
+
+    if (type === 'twitter' && topic) {
+      finalPrompt = topic;
+      finalType = 'tweet';
+      finalTone = (style || 'engaging') as ToneType;
+      finalPlatform = 'twitter';
+    } else if (type === 'reddit' && topic) {
+      finalPrompt = topic;
+      finalType = 'reddit-post';
+      finalTone = (style || 'discussion') as ToneType;
+      finalPlatform = 'reddit';
+    } else if (type === 'linkedin' && topic) {
+      finalPrompt = topic;
+      finalType = 'linkedin-post';
+      finalTone = (style || 'professional') as ToneType;
+      finalPlatform = 'linkedin';
+    } else if (type === 'visual-content' && topic) {
+      finalPrompt = topic;
+      finalType = 'instagram-caption';
+      finalTone = (style || 'trendy') as ToneType;
+      finalPlatform = platform || 'instagram';
+    } else if (type === 'email-sequence' && topic) {
+      finalPrompt = `Create an email template for ${topic} sequence`;
+      finalType = 'email-body';
+      finalTone = (style || 'engaging') as ToneType;
+      finalPlatform = 'email';
+    } else if (type === 'community-response' && topic) {
+      finalPrompt = topic;
+      finalType = 'cold-email'; // Reuse existing type for community responses
+      finalTone = (style || 'friendly') as ToneType;
+      finalPlatform = platform || 'twitter';
+    } else if (type === 'viral-content' && topic) {
+      finalPrompt = `Create viral content ideas about ${topic}`;
+      finalType = 'tweet'; // Reuse tweet type for viral content
+      finalTone = (style || 'viral') as ToneType;
+      finalPlatform = platform || 'twitter';
+    } else if (type === 'personal-brand' && topic) {
+      finalPrompt = `Create content about ${topic} that aligns with the brand voice: ${style}`;
+      finalType = 'blog-post'; // Use blog-post type for personal brand content
+      finalTone = (style || 'professional') as ToneType;
+      finalPlatform = platform || 'linkedin';
+    } else if (type === 'outreach' && topic) {
+      finalPrompt = `Create a professional outreach message for: ${topic}`;
+      finalType = 'cold-email'; // Use cold-email type for outreach messages
+      finalTone = (style || 'professional') as ToneType;
+      finalPlatform = platform || 'email';
+    }
+
+    // Check and deduct credits based on content type
+    const creditCost = getCreditsForContentType(finalType) * count;
+    const hasCredits = await deductCredits(session.user.id, creditCost);
     
     if (!hasCredits) {
       return NextResponse.json({ 
@@ -66,43 +108,75 @@ export async function POST(request: NextRequest) {
       }, { status: 402 })
     }
 
-    // Simulate processing time
-    await delay(2000 + Math.random() * 2000);
-
-    // Get templates for the content type and tone
-    const templates = contentTemplates[type]?.[tone as keyof typeof contentTemplates[typeof type]] || 
-                     contentTemplates[type]?.professional || 
-                     ["Generated content for {prompt}"];
-
-    // Select random template
-    const template = templates[Math.floor(Math.random() * templates.length)];
-
-    // Replace placeholders
-    const content = template
-      .replace(/{prompt}/g, prompt)
-      .replace(/{audience}/g, audience);
+    // Generate multiple tweets if requested
+    const results = [];
+    for (let i = 0; i < count; i++) {
+      const result = await generateContent({
+        prompt: finalPrompt,
+        contentType: finalType,
+        tone: finalTone,
+        audience: audience || 'general',
+        platform: finalPlatform || 'twitter',
+        additionalContext,
+        keywords,
+        callToAction,
+        maxLength: finalType === 'tweet' ? 280 : undefined
+      });
+      results.push(result);
+    }
 
     // Save generation to database
+    const firstResult = results[0];
     await prisma.generation.create({
       data: {
         userId: session.user.id,
-        type,
-        prompt,
-        content,
-        tone,
-        audience,
+        type: finalType,
+        prompt: finalPrompt || '',
+        content: firstResult.content,
+        tone: finalTone,
+        audience: audience || 'general',
       }
     })
 
+    // For multiple results (like Twitter), return array of content
+    if (count > 1) {
+      return NextResponse.json({
+        success: true,
+        content: results.map(r => r.content),
+        variations: results.flatMap(r => r.variations || []),
+        hashtags: firstResult.hashtags,
+        suggestedPostTime: firstResult.suggestedPostTime,
+        engagementPrediction: firstResult.engagementPrediction,
+        optimizations: firstResult.optimizations,
+        metadata: {
+          type: finalType,
+          tone: finalTone,
+          audience: audience || 'general',
+          platform: platform || 'twitter',
+          wordCount: firstResult.content.split(' ').length,
+          estimatedReadTime: Math.ceil(firstResult.content.split(' ').length / 200),
+          creditsUsed: creditCost,
+        },
+      });
+    }
+
+    // Single result (original format)
     return NextResponse.json({
       success: true,
-      content,
+      content: firstResult.content,
+      variations: firstResult.variations,
+      hashtags: firstResult.hashtags,
+      suggestedPostTime: firstResult.suggestedPostTime,
+      engagementPrediction: firstResult.engagementPrediction,
+      optimizations: firstResult.optimizations,
       metadata: {
-        type,
-        tone,
-        audience,
-        wordCount: content.split(' ').length,
-        estimatedReadTime: Math.ceil(content.split(' ').length / 200),
+        type: finalType,
+        tone: finalTone,
+        audience: audience || 'general',
+        platform: platform || 'twitter',
+        wordCount: firstResult.content.split(' ').length,
+        estimatedReadTime: Math.ceil(firstResult.content.split(' ').length / 200),
+        creditsUsed: creditCost,
       },
     });
   } catch (error) {
@@ -112,4 +186,25 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Credit cost based on content complexity
+function getCreditsForContentType(type: ContentType): number {
+  const creditMap: Record<ContentType, number> = {
+    'tweet': 1,
+    'twitter-thread': 3,
+    'linkedin-post': 2,
+    'reddit-post': 2,
+    'instagram-caption': 1,
+    'tiktok-script': 2,
+    'email-subject': 1,
+    'email-body': 2,
+    'blog-title': 1,
+    'blog-post': 5,
+    'product-hunt-launch': 3,
+    'cold-email': 2,
+    'newsletter': 3
+  };
+  
+  return creditMap[type] || 1;
 }

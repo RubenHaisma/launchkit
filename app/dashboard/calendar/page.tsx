@@ -11,7 +11,16 @@ import {
   Twitter,
   Mail,
   FileText,
-  Rocket
+  Rocket,
+  Instagram,
+  Linkedin,
+  MessageSquare,
+  ExternalLink,
+  Copy,
+  TrendingUp,
+  Users,
+  Zap,
+  Target
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,9 +33,12 @@ interface ScheduledItem {
   id: string;
   title: string;
   content: string;
-  type: 'tweet' | 'email' | 'blog' | 'launch';
+  type: 'tweet' | 'email' | 'blog' | 'launch' | 'linkedin' | 'instagram' | 'reddit';
+  platform?: string;
   scheduledFor: string;
   status: 'scheduled' | 'published' | 'draft';
+  hashtags?: string[];
+  engagementPrediction?: number;
 }
 
 const typeIcons = {
@@ -34,6 +46,9 @@ const typeIcons = {
   email: Mail,
   blog: FileText,
   launch: Rocket,
+  linkedin: Linkedin,
+  instagram: Instagram,
+  reddit: MessageSquare,
 };
 
 const typeColors = {
@@ -41,6 +56,9 @@ const typeColors = {
   email: 'from-pink-500 to-rose-500',
   blog: 'from-green-500 to-emerald-500',
   launch: 'from-purple-500 to-pink-500',
+  linkedin: 'from-blue-600 to-blue-700',
+  instagram: 'from-pink-500 to-purple-500',
+  reddit: 'from-orange-500 to-red-500',
 };
 
 const mockScheduledItems: ScheduledItem[] = [
@@ -49,26 +67,50 @@ const mockScheduledItems: ScheduledItem[] = [
     title: 'Product Launch Tweet',
     content: '🚀 Excited to announce LaunchPilot is now live! The AI marketing co-founder you\'ve been waiting for...',
     type: 'tweet',
+    platform: 'twitter',
     scheduledFor: '2024-01-25T10:00:00',
-    status: 'scheduled'
+    status: 'scheduled',
+    hashtags: ['SaaS', 'AI', 'Marketing', 'Startup'],
+    engagementPrediction: 85
   },
   {
     id: '2',
+    title: 'LinkedIn Thought Leadership',
+    content: '5 lessons learned from building LaunchPilot: Why AI marketing is the future...',
+    type: 'linkedin',
+    platform: 'linkedin',
+    scheduledFor: '2024-01-25T14:00:00',
+    status: 'scheduled',
+    engagementPrediction: 92
+  },
+  {
+    id: '3',
+    title: 'Instagram Behind the Scenes',
+    content: 'Building in public: Here\'s how we use our own AI to create this content 📱✨',
+    type: 'instagram',
+    platform: 'instagram',
+    scheduledFor: '2024-01-26T18:00:00',
+    status: 'draft',
+    hashtags: ['BuildInPublic', 'SaaS', 'AI', 'ContentCreation'],
+    engagementPrediction: 78
+  },
+  {
+    id: '4',
     title: 'Weekly Newsletter',
     content: 'This week in AI marketing: New features, success stories, and tips...',
     type: 'email',
     scheduledFor: '2024-01-26T09:00:00',
     status: 'scheduled'
-  },
-  {
-    id: '3',
-    title: 'Blog Post: AI Marketing Guide',
-    content: 'The complete guide to AI-powered marketing for SaaS founders...',
-    type: 'blog',
-    scheduledFor: '2024-01-27T14:00:00',
-    status: 'draft'
   }
 ];
+
+// Smart posting time suggestions
+const optimalPostingTimes = {
+  twitter: { weekday: '10:00', weekend: '12:00', description: 'Peak engagement times' },
+  linkedin: { weekday: '08:00', weekend: '10:00', description: 'Professional hours' },
+  instagram: { weekday: '18:00', weekend: '14:00', description: 'Evening engagement' },
+  reddit: { weekday: '09:00', weekend: '11:00', description: 'Morning browsing' },
+};
 
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -82,6 +124,37 @@ export default function CalendarPage() {
     scheduledFor: '',
     time: '09:00'
   });
+  const [showSmartSuggestions, setShowSmartSuggestions] = useState(false);
+
+  const getPlatformLink = (item: ScheduledItem) => {
+    const content = item.hashtags 
+      ? `${item.content}\n\n${item.hashtags.map(h => `#${h}`).join(' ')}`
+      : item.content;
+    
+    switch (item.type) {
+      case 'tweet':
+        return `https://twitter.com/intent/tweet?text=${encodeURIComponent(content)}`;
+      case 'linkedin':
+        return `https://www.linkedin.com/sharing/share-offsite/?text=${encodeURIComponent(content)}`;
+      case 'instagram':
+        return 'https://www.instagram.com/';
+      case 'reddit':
+        return 'https://www.reddit.com/submit';
+      default:
+        return '#';
+    }
+  };
+
+  const copyContent = async (content: string) => {
+    await navigator.clipboard.writeText(content);
+    toast.success('Copied to clipboard!');
+  };
+
+  const getSmartTimeForType = (type: string, date: Date) => {
+    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+    const times = optimalPostingTimes[type as keyof typeof optimalPostingTimes];
+    return times ? (isWeekend ? times.weekend : times.weekday) : '09:00';
+  };
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -248,10 +321,21 @@ export default function CalendarPage() {
                         return (
                           <div
                             key={item.id}
-                            className={`text-xs p-1 rounded bg-gradient-to-r ${typeColors[item.type]} text-white truncate flex items-center space-x-1`}
+                            className={`text-xs p-1 rounded bg-gradient-to-r ${typeColors[item.type]} text-white truncate flex items-center justify-between group hover:opacity-90 cursor-pointer`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // Handle item click
+                            }}
                           >
-                            <Icon className="h-2 w-2" />
-                            <span>{item.title}</span>
+                            <div className="flex items-center space-x-1 min-w-0">
+                              <Icon className="h-2 w-2 flex-shrink-0" />
+                              <span className="truncate">{item.title}</span>
+                            </div>
+                            {item.engagementPrediction && (
+                              <span className="text-[10px] opacity-75 ml-1">
+                                {item.engagementPrediction}%
+                              </span>
+                            )}
                           </div>
                         );
                       })}
@@ -298,7 +382,10 @@ export default function CalendarPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="tweet">Tweet</SelectItem>
+                      <SelectItem value="tweet">Twitter/X</SelectItem>
+                      <SelectItem value="linkedin">LinkedIn</SelectItem>
+                      <SelectItem value="instagram">Instagram</SelectItem>
+                      <SelectItem value="reddit">Reddit</SelectItem>
                       <SelectItem value="email">Email</SelectItem>
                       <SelectItem value="blog">Blog Post</SelectItem>
                       <SelectItem value="launch">Launch</SelectItem>
@@ -330,7 +417,26 @@ export default function CalendarPage() {
                   </div>
                   
                   <div>
-                    <Label htmlFor="eventTime">Time</Label>
+                    <div className="flex items-center justify-between mb-1">
+                      <Label htmlFor="eventTime">Time</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          if (newEvent.scheduledFor) {
+                            const selectedDate = new Date(newEvent.scheduledFor);
+                            const smartTime = getSmartTimeForType(newEvent.type, selectedDate);
+                            setNewEvent(prev => ({ ...prev, time: smartTime }));
+                            toast.success('Optimal time suggested!');
+                          }
+                        }}
+                        className="text-xs text-purple-400 hover:text-purple-300"
+                      >
+                        <Zap className="h-3 w-3 mr-1" />
+                        Smart Time
+                      </Button>
+                    </div>
                     <Input
                       id="eventTime"
                       type="time"
@@ -365,15 +471,45 @@ export default function CalendarPage() {
                       const Icon = typeIcons[item.type];
                       return (
                         <div key={item.id} className="glassmorphism-dark rounded-lg p-3">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <div className={`p-1 rounded bg-gradient-to-r ${typeColors[item.type]}`}>
-                              <Icon className="h-3 w-3 text-white" />
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                              <div className={`p-1 rounded bg-gradient-to-r ${typeColors[item.type]}`}>
+                                <Icon className="h-3 w-3 text-white" />
+                              </div>
+                              <span className="text-sm font-semibold">{item.title}</span>
                             </div>
-                            <span className="text-sm font-semibold">{item.title}</span>
+                            {item.engagementPrediction && (
+                              <div className="flex items-center space-x-1 text-xs">
+                                <Target className="h-3 w-3 text-green-400" />
+                                <span className="text-green-400">{item.engagementPrediction}%</span>
+                              </div>
+                            )}
                           </div>
-                          <div className="text-xs text-muted-foreground flex items-center space-x-1">
+                          <div className="text-xs text-muted-foreground flex items-center space-x-1 mb-2">
                             <Clock className="h-3 w-3" />
                             <span>{new Date(item.scheduledFor).toLocaleString()}</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{item.content}</p>
+                          <div className="flex space-x-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => copyContent(item.content + (item.hashtags ? `\n\n${item.hashtags.map(h => `#${h}`).join(' ')}` : ''))}
+                              className="glassmorphism h-6 text-xs"
+                            >
+                              <Copy className="h-2 w-2 mr-1" />
+                              Copy
+                            </Button>
+                            {item.type !== 'email' && item.type !== 'blog' && item.type !== 'launch' && (
+                              <Button
+                                size="sm"
+                                onClick={() => window.open(getPlatformLink(item), '_blank')}
+                                className={`h-6 text-xs bg-gradient-to-r ${typeColors[item.type]} text-white`}
+                              >
+                                <ExternalLink className="h-2 w-2 mr-1" />
+                                Post
+                              </Button>
+                            )}
                           </div>
                         </div>
                       );

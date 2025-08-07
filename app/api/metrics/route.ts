@@ -13,7 +13,12 @@ export async function GET(request: NextRequest) {
 
     if (channel && metric) {
       // Return specific metric data
-      const data = mockMetrics[channel as keyof typeof mockMetrics]?.[metric as any];
+      const channelData = mockMetrics[channel as keyof typeof mockMetrics];
+      if (!channelData) {
+        return NextResponse.json({ error: 'Channel not found' }, { status: 404 });
+      }
+      
+      const data = (channelData as any)[metric];
       if (!data) {
         return NextResponse.json({ error: 'Metric not found' }, { status: 404 });
       }

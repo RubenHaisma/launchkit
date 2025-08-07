@@ -9,7 +9,7 @@ const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
 export async function POST(request: NextRequest) {
   try {
     const body = await request.text()
-    const signature = headers().get('stripe-signature')!
+    const signature = (await headers()).get('stripe-signature')!
 
     let event: Stripe.Event
 
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
           data: {
             stripeCustomerId: session.customer as string,
             stripePriceId: subscription.items.data[0]?.price.id,
-            stripeCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
+            stripeCurrentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
             plan,
             credits: credits === -1 ? 999999 : credits, // Set high number for unlimited
           },
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 
       case 'invoice.payment_succeeded': {
         const invoice = event.data.object as Stripe.Invoice
-        const subscriptionId = invoice.subscription as string
+        const subscriptionId = (invoice as any).subscription as string
 
         if (!subscriptionId) break
 
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
         await prisma.user.update({
           where: userId ? { id: userId } : { stripeCustomerId: invoice.customer as string },
           data: {
-            stripeCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
+            stripeCurrentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
             credits,
           },
         })

@@ -1,6 +1,3 @@
-'use client';
-
-import { motion } from 'framer-motion';
 import { Shield, Lock, Eye, Mail } from 'lucide-react';
 import { Navigation } from '@/components/navigation/navigation';
 import { Footer } from '@/components/sections/footer';
@@ -19,12 +16,7 @@ export default function PrivacyPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-blue-900/20 to-pink-900/20" />
         
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-16"
-          >
+          <div className="text-center mb-16">
             <div className="inline-flex items-center space-x-2 glassmorphism rounded-full px-4 py-2 mb-6">
               <Shield className="h-4 w-4 text-purple-400" />
               <span className="text-sm font-medium">Privacy Policy</span>
@@ -39,14 +31,9 @@ export default function PrivacyPage() {
             <p className="text-sm text-muted-foreground mt-4">
               Last updated: January 2024
             </p>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="glassmorphism rounded-xl p-8 space-y-8"
-          >
+          <div className="glassmorphism rounded-xl p-8 space-y-8">
             <section>
               <div className="flex items-center space-x-3 mb-4">
                 <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500">
@@ -139,7 +126,7 @@ export default function PrivacyPage() {
                 <p>We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last updated" date.</p>
               </div>
             </section>
-          </motion.div>
+          </div>
         </div>
       </section>
 

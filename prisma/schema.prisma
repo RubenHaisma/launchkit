@@ -58,6 +58,8 @@ model User {
   posts       Post[]
   newsletters Newsletter[]
   generations Generation[]
+  userStats   UserStats?
+  apiUsage    ApiUsage[]
 
   @@map(name: "users")
 }
@@ -140,9 +142,66 @@ model Generation {
   content   String   @db.Text
   tone      String?
   audience  String?
+  model     String?  // gpt-4, claude-3, etc
+  tokens    Int?     // tokens used for this generation
+  cost      Decimal? @db.Decimal(10,6) // cost in USD
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map(name: "generations")
+}
+
+model AdminUser {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String
+  role      String   @default("admin") // admin, super_admin
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map(name: "admin_users")
+}
+
+model UserStats {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  totalGenerations Int      @default(0)
+  totalTokens      Int      @default(0)
+  totalCost        Decimal  @default(0) @db.Decimal(10,6)
+  lastActiveAt     DateTime @default(now())
+  planUpgradedAt   DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map(name: "user_stats")
+}
+
+model ApiUsage {
+  id        String   @id @default(cuid())
+  provider  String   // openai, anthropic
+  model     String   // gpt-4, claude-3-sonnet, etc
+  endpoint  String   // completions, chat, etc
+  tokens    Int
+  cost      Decimal  @db.Decimal(10,6)
+  userId    String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map(name: "api_usage")
+}
+
+model SystemConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @db.Text
+  type      String   @default("string") // string, number, boolean, json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map(name: "system_config")
 }

@@ -5,12 +5,16 @@ import { TestimonialsSection } from '@/components/sections/testimonials-section'
 import { CTASection } from '@/components/sections/cta-section';
 import { Navigation } from '@/components/navigation/navigation';
 import { Footer } from '@/components/sections/footer';
+import { AiDemo } from '@/components/ai-demo';
 
 export default function Home() {
   return (
     <main className="min-h-screen">
       <Navigation />
       <HeroSection />
+      <div className="py-20 bg-gradient-to-b from-black via-purple-900/10 to-black">
+        <AiDemo />
+      </div>
       <ReplacementTools />
       <FeaturesGrid />
       <TestimonialsSection />

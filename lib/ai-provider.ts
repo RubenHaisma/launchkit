@@ -95,7 +95,6 @@ async function checkProviderHealth(config: ProviderConfig): Promise<ProviderHeal
     await generateText({
       model: testModel,
       prompt: 'Test', // Minimal prompt
-      maxTokens: 5,
       temperature: 0
     });
 

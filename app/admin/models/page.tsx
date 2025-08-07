@@ -355,7 +355,7 @@ export default function AdminModels() {
                         <Switch
                           checked={model.enabled}
                           onCheckedChange={(enabled) => handleToggleModel(model.id, enabled)}
-                          size="sm"
+                          className="size-4"
                         />
                       </div>
                     </TableCell>

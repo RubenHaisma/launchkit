@@ -40,24 +40,22 @@ export function Navigation() {
     <>
       {/* Floating Navigation */}
       <motion.nav
-        initial={{ y: -100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className={`fixed top-4 left-1/2 z-50 transition-all duration-500 ${
-          scrolled 
-            ? 'glassmorphism-dark shadow-2xl border border-white/20' 
-            : 'glassmorphism-dark border border-white/10'
-        }`}
-        style={{
-          borderRadius: '24px',
-          backdropFilter: 'blur(20px)',
-          background: 'rgba(0, 0, 0, 0.6)',
-          transform: 'translateX(-50%)', // Ensures true centering
-          right: 'auto', // Prevents right override
-        }}
-      >
+            initial={{ y: -100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className={`fixed top-4 z-50 max-w-7xl mx-auto w-full transition-all duration-500 ${
+              scrolled 
+                ? 'glassmorphism-dark shadow-2xl border border-white/20' 
+                : 'glassmorphism-dark border border-white/10'
+            }`}
+            style={{
+              borderRadius: '24px',
+              backdropFilter: 'blur(20px)',
+              background: 'rgba(0, 0, 0, 0.6)',
+            }}
+          >
         <div className="px-6 py-4">
-          <div className="flex items-center justify-center gap-8 w-full">
+          <div className="flex items-center justify-between w-full">
             {/* Logo */}
             <Link href="/" className="flex items-center space-x-3 group">
               <motion.div 
@@ -75,8 +73,8 @@ export function Navigation() {
               </motion.span>
             </Link>
 
-            {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center space-x-1">
+            {/* Desktop Navigation - Centered */}
+            <div className="hidden xl:flex items-center space-x-1 flex-1 justify-center max-w-fit mx-auto">
               {navItems.map((item, index) => {
                 const isActive = pathname === item.href || 
                                (item.href !== '/' && pathname.startsWith(item.href));
@@ -130,7 +128,7 @@ export function Navigation() {
               })}
             </div>
 
-            {/* Auth Buttons */}
+            {/* Auth Buttons - Right Side */}
             <div className="hidden md:flex items-center space-x-3">
               <Link href="/auth/login">
                 <Button 

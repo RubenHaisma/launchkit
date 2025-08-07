@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
         take: 50
       }),
 
-      // Model statistics with performance data
+            // Model statistics with performance data
       prisma.apiUsage.groupBy({
         by: ['provider', 'model'],
         where: {
@@ -114,12 +114,7 @@ export async function GET(request: NextRequest) {
         _avg: {
           responseTime: true
         },
-        orderBy: {
-          _count: {
-            _all: 'desc'
-          }
-        },
-        take: 10
+
       }),
 
       // Error statistics
@@ -190,7 +185,7 @@ export async function GET(request: NextRequest) {
 
     // Calculate error rates by provider
     const errorRates = new Map();
-    errorStats.forEach(stat => {
+    errorStats.forEach((stat: any) => {
       if (!errorRates.has(stat.provider)) {
         errorRates.set(stat.provider, { total: 0, errors: 0 });
       }
@@ -202,7 +197,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Transform model stats with real performance data
-    const topModels = modelStats.map(stat => {
+    const topModels = modelStats.map((stat: any) => {
       const providerErrors = errorRates.get(stat.provider) || { total: 0, errors: 0 };
       const successRate = providerErrors.total > 0 ? 
         ((providerErrors.total - providerErrors.errors) / providerErrors.total) * 100 : 100;
@@ -216,10 +211,10 @@ export async function GET(request: NextRequest) {
         avgResponseTime: Math.round(stat._avg.responseTime || 0),
         successRate: Math.round(successRate)
       };
-    });
+    }).sort((a: any, b: any) => b.requests - a.requests).slice(0, 10);
 
     // Transform recent usage with real data
-    const recentUsageData = recentUsage.map(usage => ({
+    const recentUsageData = recentUsage.map((usage: any) => ({
       id: usage.id,
       provider: usage.provider,
       model: usage.model,
@@ -237,12 +232,12 @@ export async function GET(request: NextRequest) {
 
     // Calculate real averages
     const avgResponseTime = Math.round(totalUsage._avg.responseTime || 0);
-    const totalErrors = errorStats.filter(s => !s.success).reduce((sum, s) => sum + s._count, 0);
+    const totalErrors = errorStats.filter((s: any) => !s.success).reduce((sum: any, s: any) => sum + s._count, 0);
     const totalRequests = totalUsage._count || 0;
     const errorRate = totalRequests > 0 ? (totalErrors / totalRequests) * 100 : 0;
 
     // Provider performance summary
-    const providerPerformance = responseTimeStats.map(stat => ({
+    const providerPerformance = responseTimeStats.map((stat: any) => ({
       provider: stat.provider,
       avgResponseTime: Math.round(stat._avg.responseTime || 0),
       minResponseTime: stat._min.responseTime || 0,

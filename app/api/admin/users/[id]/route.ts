@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -23,7 +23,7 @@ export async function GET(
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    const userId = params.id;
+    const { id: userId } = await params;
 
     // Get comprehensive user information
     const [user, userActivity, apiUsage] = await Promise.all([
@@ -34,8 +34,7 @@ export async function GET(
           businessProfile: true,
           accounts: {
             select: {
-              provider: true,
-              createdAt: true
+              provider: true
             }
           },
           sessions: {
@@ -142,7 +141,7 @@ export async function GET(
     const totalCost = (generationTotals._sum.cost?.toNumber() || 0) + (apiUsageTotals._sum.cost?.toNumber() || 0);
 
     // Transform user activity into recent activity
-    const recentActivity = userActivity.map(activity => ({
+    const recentActivity = userActivity.map((activity: any) => ({
       id: activity.id,
       type: activity.activity,
       description: activity.description || `User performed ${activity.activity}`,
@@ -219,13 +218,13 @@ export async function GET(
       businessProfile: user.businessProfile,
       
       // Account data
-      authProviders: user.accounts.map(acc => acc.provider),
-      activeSessions: user.sessions.filter(s => s.expires > now).length,
+      authProviders: user.accounts.map((acc: any) => acc.provider),
+      activeSessions: user.sessions.filter((s: any) => s.expires > now).length,
       
       // Calculated metrics
       avgGenerationsPerDay: user._count.generations / Math.max(1, (now.getTime() - user.createdAt.getTime()) / (1000 * 60 * 60 * 24)),
       avgCostPerGeneration: totalCost / Math.max(1, user._count.generations),
-      publishedPostsRatio: user.posts.length > 0 ? user.posts.filter(p => p.published).length / user.posts.length : 0
+      publishedPostsRatio: user.posts.length > 0 ? user.posts.filter((p: any) => p.published).length / user.posts.length : 0
     };
 
     return NextResponse.json({ user: userDetails });
@@ -241,7 +240,7 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -259,7 +258,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    const userId = params.id;
+    const { id: userId } = await params;
     const { action, data } = await request.json();
 
     let updateData: any = {};
@@ -334,7 +333,7 @@ export async function PATCH(
     }
 
     // Perform the update in a transaction
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any ) => {
       // Update the user
       const updatedUser = await tx.user.update({
         where: { id: userId },

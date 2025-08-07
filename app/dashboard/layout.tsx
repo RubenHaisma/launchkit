@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -12,13 +12,10 @@ import {
   FileText, 
   BarChart3,
   Settings,
-  Menu,
   X,
-  Bell,
   Zap,
   ChevronLeft,
   ChevronRight,
-  LogOut,
   User,
   Calendar,
   History,
@@ -26,13 +23,12 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDashboardStore } from '@/lib/store/dashboard-store';
-import { CreditBadge } from '@/components/ui/credit-badge';
-import { PlanBadge } from '@/components/ui/plan-badge';
 import { UsageStatsWidget } from '@/components/dashboard/usage-stats-widget';
 import { NotificationPanel } from '@/components/dashboard/notification-panel';
+import { DashboardNavigation } from '@/components/dashboard/dashboard-navigation';
+import { DashboardFooter } from '@/components/dashboard/dashboard-footer';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import toast from 'react-hot-toast';
 
 const sidebarItems = [
   { icon: Home, label: 'Home', href: '/dashboard', id: 'home' },
@@ -90,11 +86,7 @@ export default function DashboardLayout({
     setMobileMenuOpen(false);
   }, [pathname]);
 
-  const handleLogout = async () => {
-    await signOut({ redirect: false });
-    toast.success('Logged out successfully');
-    router.push('/');
-  };
+
 
   if (status === 'loading') {
     return (
@@ -131,10 +123,10 @@ export default function DashboardLayout({
 
       {/* Sidebar */}
       <div
-        className={`h-screen glassmorphism-dark border-r border-white/10 z-50 flex flex-col transition-all duration-300 ease-in-out ${
+        className={`h-screen sticky top-0 glassmorphism-dark border-r border-white/10 z-50 flex flex-col transition-all duration-300 ease-in-out ${
           sidebarCollapsed ? 'w-20' : 'w-64'
         } ${
-          mobileMenuOpen ? 'fixed translate-x-0' : 'fixed -translate-x-full lg:relative lg:translate-x-0'
+          mobileMenuOpen ? 'fixed translate-x-0' : 'fixed -translate-x-full lg:sticky lg:translate-x-0'
         }`}
       >
         {/* Sidebar Header */}
@@ -264,102 +256,16 @@ export default function DashboardLayout({
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
-        {/* Header */}
-        <motion.header
-          initial={{ y: -50 }}
-          animate={{ y: 0 }}
-          className="glassmorphism-dark border-b border-white/10 p-6 sticky top-0 z-30"
-        >
-          <div className="flex items-center justify-between">
-            {/* Mobile Menu Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-
-            {/* Welcome Message */}
-            <div className="hidden lg:block">
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                <h1 className="text-2xl font-bold font-sora text-gradient-premium">
-                  Good morning, {session.user.name?.split(' ')[0]}! 👋
-                </h1>
-                <p className="text-muted-foreground font-medium">Ready to launch something amazing today?</p>
-              </motion.div>
-            </div>
-
-            {/* Header Actions */}
-            <div className="flex items-center space-x-4">
-              <CreditBadge variant="detailed" />
-              <PlanBadge />
-              
-              {/* User Menu */}
-              <motion.div 
-                className="flex items-center space-x-3 glassmorphism-dark px-3 py-2 rounded-xl"
-                whileHover={{ scale: 1.02 }}
-              >
-                <motion.div 
-                  className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center shadow-lg"
-                  whileHover={{ scale: 1.1 }}
-                >
-                  <User className="h-5 w-5 text-white" />
-                </motion.div>
-                <div className="hidden md:block">
-                  <div className="text-sm font-semibold text-white">{session.user.name}</div>
-                  <div className="text-xs text-muted-foreground">{session.user.email}</div>
-                </div>
-              </motion.div>
-              
-              <div className="relative">
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="glassmorphism relative hover:scale-105 transition-all duration-300"
-                  onClick={() => setShowNotifications(!showNotifications)}
-                >
-                  <Bell className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Notifications</span>
-                  {unreadCount > 0 && (
-                    <motion.span 
-                      className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{ repeat: Infinity, duration: 2 }}
-                    >
-                      {unreadCount}
-                    </motion.span>
-                  )}
-                </Button>
-              </div>
-              
-              <Button 
-                size="sm" 
-                variant="outline" 
-                onClick={handleLogout}
-                className="glassmorphism text-red-400 hover:text-red-300 hover:scale-105 transition-all duration-300"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Logout</span>
-              </Button>
-              
-              <Link href="/dashboard/generate">
-                <Button size="sm" variant="premium" className="hover:scale-105 transition-all duration-300 shadow-lg">
-                  <PenTool className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Generate</span>
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </motion.header>
+        {/* Dashboard Navigation */}
+        <DashboardNavigation
+          onMobileMenuToggle={() => setMobileMenuOpen(true)}
+          showNotifications={showNotifications}
+          onNotificationsToggle={() => setShowNotifications(!showNotifications)}
+          sidebarCollapsed={sidebarCollapsed}
+        />
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto pt-20 flex flex-col">
           <AnimatePresence mode="wait">
             <motion.div
               key={pathname}
@@ -367,11 +273,12 @@ export default function DashboardLayout({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
-              className="h-full"
+              className="flex-1 flex flex-col"
             >
               {children}
             </motion.div>
           </AnimatePresence>
+          <DashboardFooter />
         </main>
       </div>
 

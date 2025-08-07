@@ -157,11 +157,7 @@ export function useTokens(): UseTokensReturn {
         // Handle insufficient tokens
         if (result.upgradeRequired) {
           toast.error('Insufficient tokens! Please upgrade your plan to continue.', {
-            duration: 5000,
-            action: {
-              label: 'Upgrade',
-              onClick: () => window.location.href = '/pricing'
-            }
+            duration: 5000
           })
         } else {
           toast.error(result.error || 'Failed to use tokens')

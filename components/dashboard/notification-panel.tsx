@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, CheckCircle, AlertCircle, Info, TrendingUp, X, MarkAsUnread } from 'lucide-react';
+import { Bell, CheckCircle, AlertCircle, Info, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDashboardStore } from '@/lib/store/dashboard-store';
 

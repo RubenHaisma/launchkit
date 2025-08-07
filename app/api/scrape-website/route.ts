@@ -40,8 +40,7 @@ async function scrapeWebsite(url: string): Promise<WebsiteData> {
     const response = await fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; LaunchPilot/1.0; +https://launchpilot.ai)'
-      },
-      timeout: 10000
+      }
     })
 
     if (!response.ok) {
@@ -209,23 +208,23 @@ export async function POST(request: NextRequest) {
         create: {
           userId: session.user.id,
           website: url,
-          websiteData: websiteData,
+          websiteData: websiteData as any,
           lastScrapedAt: new Date(),
           businessName: websiteData.title,
           description: websiteData.description,
           industry: websiteData.businessInfo?.industry,
           location: websiteData.businessInfo?.location,
-          socialMediaLinks: websiteData.socialMedia
+          socialMediaLinks: websiteData.socialMedia as any
         },
         update: {
           website: url,
-          websiteData: websiteData,
+          websiteData: websiteData as any,
           lastScrapedAt: new Date(),
           businessName: websiteData.title || undefined,
           description: websiteData.description || undefined,
           industry: websiteData.businessInfo?.industry || undefined,
           location: websiteData.businessInfo?.location || undefined,
-          socialMediaLinks: websiteData.socialMedia || undefined
+          socialMediaLinks: websiteData.socialMedia as any || undefined
         }
       })
     }

@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
         providers: healthStatuses,
         timestamp: new Date().toISOString()
       });
-    }
+    } 
 
     if (action === 'stats') {
       const stats = getProviderStats();

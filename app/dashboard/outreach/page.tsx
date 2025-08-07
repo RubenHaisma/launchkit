@@ -35,6 +35,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 
 interface OutreachTemplate {
   id: string;
@@ -81,7 +83,7 @@ interface GeneratedMessage {
 }
 
 export default function OutreachPage() {
-  const [outreachTemplates] = useState<OutreachTemplate[]>([
+  const [outreachTemplates, setOutreachTemplates] = useState<OutreachTemplate[]>([
     {
       id: '1',
       name: 'SaaS Founder Collaboration',
@@ -370,7 +372,7 @@ export default function OutreachPage() {
       tags: newTemplate.tags.split(',').map(t => t.trim()).filter(Boolean)
     };
 
-    setOutreachTemplates(prev => [...prev, template]);
+    setOutreachTemplates(prev => [...prev, template as any]);
     setNewTemplate({
       name: '',
       platform: 'twitter',

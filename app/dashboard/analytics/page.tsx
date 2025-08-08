@@ -2,21 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  BarChart3, 
-  TrendingUp, 
-  Users, 
-  Mail, 
-  Twitter, 
+import {
+  BarChart3,
+  TrendingUp,
+  Users,
+  Mail,
+  Twitter,
   FileText,
   Eye,
   MousePointer,
   Heart,
   MessageSquare,
   RefreshCw,
-  Linkedin,
-  Instagram,
-  Plus,
   Target,
   Zap,
   Sparkles
@@ -32,8 +29,6 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 
 const channels = [
   { id: 'twitter', label: 'Twitter', icon: Twitter, color: 'from-blue-500 to-cyan-500' },
-  { id: 'linkedin', label: 'LinkedIn', icon: Linkedin, color: 'from-blue-600 to-blue-700' },
-  { id: 'instagram', label: 'Instagram', icon: Instagram, color: 'from-pink-500 to-purple-500' },
   { id: 'email', label: 'Email', icon: Mail, color: 'from-pink-500 to-rose-500' },
   { id: 'blog', label: 'Blog', icon: FileText, color: 'from-green-500 to-emerald-500' },
 ];
@@ -51,6 +46,7 @@ export default function AnalyticsPage() {
   const [metrics, setMetrics] = useState<any>(null);
   const [todayStats, setTodayStats] = useState<any>(null);
   const [weeklyGrowth, setWeeklyGrowth] = useState<any>(null);
+  const [topContent, setTopContent] = useState<any>(null);
 
   // Load data on mount and when timeframe changes
   useEffect(() => {
@@ -67,6 +63,7 @@ export default function AnalyticsPage() {
         setMetrics(data.metrics);
         setTodayStats(data.today);
         setWeeklyGrowth(data.growth);
+        setTopContent(data.topContent);
         toast.success('Analytics refreshed!');
       }
     } catch (error) {
@@ -85,18 +82,7 @@ export default function AnalyticsPage() {
           { icon: Heart, label: 'Engagement', value: todayStats?.twitter?.engagement?.toLocaleString() || '0', change: `+${weeklyGrowth?.twitter?.engagement || 0}%`, color: 'text-red-400' },
           { icon: Users, label: 'Followers', value: todayStats?.twitter?.followers?.toLocaleString() || '0', change: `+${weeklyGrowth?.twitter?.followers || 0}%`, color: 'text-green-400' },
         ];
-      case 'linkedin':
-        return [
-          { icon: Eye, label: 'Impressions', value: '8,240', change: '+18%', color: 'text-blue-400' },
-          { icon: Heart, label: 'Reactions', value: '342', change: '+25%', color: 'text-red-400' },
-          { icon: Users, label: 'Connections', value: '1,284', change: '+12%', color: 'text-green-400' },
-        ];
-      case 'instagram':
-        return [
-          { icon: Eye, label: 'Reach', value: '12,450', change: '+22%', color: 'text-pink-400' },
-          { icon: Heart, label: 'Likes', value: '892', change: '+15%', color: 'text-red-400' },
-          { icon: Users, label: 'Followers', value: '2,156', change: '+8%', color: 'text-purple-400' },
-        ];
+      
       case 'email':
         return [
           { icon: Mail, label: 'Opens', value: todayStats?.email?.opens?.toLocaleString() || '0', change: `+${weeklyGrowth?.email?.opens || 0}%`, color: 'text-pink-400' },
@@ -358,7 +344,7 @@ export default function AnalyticsPage() {
         transition={{ delay: 0.4 }}
         className="grid grid-cols-1 lg:grid-cols-2 gap-8"
       >
-        {/* Top Performing Content */}
+        {/* Top Performing Content (real data) */}
         <div className="card-premium">
           <div className="flex items-center space-x-3 mb-6">
             <motion.div 
@@ -370,35 +356,57 @@ export default function AnalyticsPage() {
             <h3 className="text-lg font-bold font-sora text-gradient-premium">Top Performing Content</h3>
           </div>
           <div className="space-y-4">
-            {[
-              { title: 'How to build a SaaS in 30 days', metric: '2.4K views', type: 'blog', performance: 'high' },
-              { title: 'Cold email templates that convert', metric: '89% open rate', type: 'email', performance: 'high' },
-              { title: 'Product Hunt launch strategy', metric: '1.2K impressions', type: 'twitter', performance: 'medium' },
-            ].map((item, index) => (
-              <div key={index} className="glassmorphism-dark rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    item.type === 'blog' ? 'bg-green-500/20 text-green-400' :
-                    item.type === 'email' ? 'bg-pink-500/20 text-pink-400' :
-                    'bg-blue-500/20 text-blue-400'
-                  }`}>
-                    {item.type}
-                  </span>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    item.performance === 'high' ? 'bg-green-500/20 text-green-400' :
-                    'bg-yellow-500/20 text-yellow-400'
-                  }`}>
-                    {item.performance}
-                  </span>
+            {(() => {
+              const items: Array<{ key: string; badge: string; title: string; metric: string; color: string; }> = []
+              if (topContent?.tweets?.length) {
+                for (const t of topContent.tweets) {
+                  items.push({
+                    key: `tweet_${t.id}`,
+                    badge: 'twitter',
+                    title: t.content?.slice(0, 80) + (t.content?.length > 80 ? '…' : ''),
+                    metric: `${t.impressions?.toLocaleString?.() || t.impressions} impressions` + (t.engagement ? ` • ${t.engagement} engagements` : ''),
+                    color: 'bg-blue-500/20 text-blue-400'
+                  })
+                }
+              }
+              if (topContent?.campaigns?.length) {
+                for (const c of topContent.campaigns) {
+                  items.push({
+                    key: `camp_${c.id}`,
+                    badge: 'email',
+                    title: c.subject || c.name || 'Campaign',
+                    metric: `${(c.openRate || 0).toFixed(1)}% open • ${(c.clickRate || 0).toFixed(1)}% click`,
+                    color: 'bg-pink-500/20 text-pink-400'
+                  })
+                }
+              }
+              if (topContent?.posts?.length) {
+                for (const p of topContent.posts) {
+                  items.push({
+                    key: `post_${p.id}`,
+                    badge: 'blog',
+                    title: p.title || 'Blog post',
+                    metric: p.published ? 'Published' : 'Draft',
+                    color: 'bg-green-500/20 text-green-400'
+                  })
+                }
+              }
+              return items.slice(0, 6).map((item) => (
+                <div key={item.key} className="glassmorphism-dark rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`text-xs px-2 py-1 rounded-full ${item.color}`}>
+                      {item.badge}
+                    </span>
+                  </div>
+                  <h4 className="font-semibold text-sm mb-1">{item.title}</h4>
+                  <p className="text-xs text-muted-foreground">{item.metric}</p>
                 </div>
-                <h4 className="font-semibold text-sm mb-1">{item.title}</h4>
-                <p className="text-xs text-muted-foreground">{item.metric}</p>
-              </div>
-            ))}
+              ))
+            })()}
           </div>
         </div>
 
-        {/* AI-Powered Insights */}
+        {/* AI-Powered Insights (derived from real metrics) */}
         <div className="card-premium">
           <div className="flex items-center gap-3 mb-6">
             <motion.div 
@@ -410,40 +418,42 @@ export default function AnalyticsPage() {
             <h3 className="text-lg font-bold font-sora text-gradient-premium">AI Insights</h3>
           </div>
           <div className="space-y-4">
-            {[
-              {
-                title: 'Content Performance Prediction',
-                description: 'Your next LinkedIn post has 87% chance of high engagement',
-                metric: '87%',
-                action: 'View details',
-                type: 'prediction',
-                icon: Target
-              },
-              {
-                title: 'Optimal Posting Schedule',
-                description: `Best ${selectedChannel} posting times: Weekdays 10-11 AM`,
-                metric: '+40%',
-                action: 'Apply schedule',
-                type: 'timing',
-                icon: Zap
-              },
-              {
-                title: 'Content Gap Analysis',
-                description: 'Your audience wants more educational content',
-                metric: '73%',
-                action: 'Generate ideas',
-                type: 'content',
-                icon: TrendingUp
-              },
-              {
-                title: 'Engagement Boost Tip',
-                description: 'Add more visual content for +25% engagement',
-                metric: '+25%',
-                action: 'Create visuals',
-                type: 'strategy',
-                icon: Eye
-              },
-            ].map((insight, index) => (
+            {(() => {
+              const insights: Array<{ title: string; description: string; metric: string; action: string; type: 'prediction' | 'timing' | 'content' | 'strategy'; icon: any; }>
+                = []
+              if (weeklyGrowth?.twitter) {
+                const g = weeklyGrowth.twitter
+                insights.push({
+                  title: 'Twitter Momentum',
+                  description: `Impressions ${g.impressions >= 0 ? 'up' : 'down'} ${Math.abs(g.impressions)}% vs last week`,
+                  metric: `${g.impressions >= 0 ? '+' : ''}${g.impressions}%`,
+                  action: 'View tweets',
+                  type: 'content',
+                  icon: TrendingUp
+                })
+              }
+              if (topContent?.campaigns?.[0]) {
+                const c = topContent.campaigns[0]
+                insights.push({
+                  title: 'Best Email Campaign',
+                  description: `${c.subject || c.name}: ${(c.openRate || 0).toFixed(1)}% opens, ${(c.clickRate || 0).toFixed(1)}% clicks`,
+                  metric: `${(c.openRate || 0).toFixed(1)}%`,
+                  action: 'Open campaign',
+                  type: 'strategy',
+                  icon: Eye
+                })
+              }
+              if (todayStats?.email?.opens) {
+                insights.push({
+                  title: 'Posting Window',
+                  description: `Email opens today: ${todayStats.email.opens}. Schedule when engagement peaks.`,
+                  metric: `${todayStats.email.opens}`,
+                  action: 'Go to calendar',
+                  type: 'timing',
+                  icon: Zap
+                })
+              }
+              return insights.map((insight, index) => (
               <div key={index} className="glassmorphism-dark rounded-lg p-4">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-start gap-2">
@@ -481,22 +491,15 @@ export default function AnalyticsPage() {
                     variant="outline" 
                     className="glassmorphism text-xs h-6"
                     onClick={() => {
-                      // Implement action based on insight type
                       switch (insight.type) {
-                        case 'prediction':
-                          toast.success('Content prediction details coming soon!');
-                          break;
                         case 'timing':
-                          // Auto-schedule content at optimal time
                           window.location.href = '/dashboard/calendar';
                           break;
                         case 'content':
-                          // Generate content ideas
-                          window.location.href = '/dashboard/generate';
+                          window.location.href = '/dashboard/twitter';
                           break;
                         case 'strategy':
-                          // Create visual content
-                          window.location.href = '/dashboard/visual-content';
+                          window.location.href = '/dashboard/email-campaigns';
                           break;
                         default:
                           toast('Feature coming soon!');
@@ -507,7 +510,8 @@ export default function AnalyticsPage() {
                   </Button>
                 </div>
               </div>
-            ))}
+              ))
+            })()}
           </div>
         </div>
       </motion.div>

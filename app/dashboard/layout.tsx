@@ -19,7 +19,8 @@ import {
   User,
   Calendar,
   History,
-  Rocket
+  Rocket,
+  BookOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDashboardStore } from '@/lib/store/dashboard-store';
@@ -36,6 +37,7 @@ const sidebarItems = [
   { icon: Twitter, label: 'Twitter', href: '/dashboard/twitter', id: 'twitter' },
   { icon: Mail, label: 'Outreach', href: '/dashboard/outreach', id: 'outreach' },
   { icon: FileText, label: 'Email Campaigns', href: '/dashboard/email-campaigns', id: 'email' },
+  { icon: BookOpen, label: 'Blog', href: '/dashboard/blog', id: 'blog' },
   { icon: History, label: 'History', href: '/dashboard/history', id: 'history' },
   { icon: Rocket, label: 'Launch', href: '/dashboard/launch', id: 'launch' },
   { icon: Calendar, label: 'Calendar', href: '/dashboard/calendar', id: 'calendar' },

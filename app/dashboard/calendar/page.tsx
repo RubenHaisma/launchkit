@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Calendar as CalendarIcon, 
@@ -28,6 +28,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import toast from 'react-hot-toast';
+import { useSession } from 'next-auth/react';
 
 interface ScheduledItem {
   id: string;
@@ -61,48 +62,7 @@ const typeColors = {
   reddit: 'from-orange-500 to-red-500',
 };
 
-const mockScheduledItems: ScheduledItem[] = [
-  {
-    id: '1',
-    title: 'Product Launch Tweet',
-    content: '🚀 Excited to announce LaunchPilot is now live! The AI marketing co-founder you\'ve been waiting for...',
-    type: 'tweet',
-    platform: 'twitter',
-    scheduledFor: '2024-01-25T10:00:00',
-    status: 'scheduled',
-    hashtags: ['SaaS', 'AI', 'Marketing', 'Startup'],
-    engagementPrediction: 85
-  },
-  {
-    id: '2',
-    title: 'LinkedIn Thought Leadership',
-    content: '5 lessons learned from building LaunchPilot: Why AI marketing is the future...',
-    type: 'linkedin',
-    platform: 'linkedin',
-    scheduledFor: '2024-01-25T14:00:00',
-    status: 'scheduled',
-    engagementPrediction: 92
-  },
-  {
-    id: '3',
-    title: 'Instagram Behind the Scenes',
-    content: 'Building in public: Here\'s how we use our own AI to create this content 📱✨',
-    type: 'instagram',
-    platform: 'instagram',
-    scheduledFor: '2024-01-26T18:00:00',
-    status: 'draft',
-    hashtags: ['BuildInPublic', 'SaaS', 'AI', 'ContentCreation'],
-    engagementPrediction: 78
-  },
-  {
-    id: '4',
-    title: 'Weekly Newsletter',
-    content: 'This week in AI marketing: New features, success stories, and tips...',
-    type: 'email',
-    scheduledFor: '2024-01-26T09:00:00',
-    status: 'scheduled'
-  }
-];
+const mockScheduledItems: ScheduledItem[] = [];
 
 // Smart posting time suggestions
 const optimalPostingTimes = {
@@ -113,6 +73,7 @@ const optimalPostingTimes = {
 };
 
 export default function CalendarPage() {
+  const { data: session } = useSession();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [scheduledItems, setScheduledItems] = useState<ScheduledItem[]>(mockScheduledItems);
   const [showNewEvent, setShowNewEvent] = useState(false);
@@ -125,6 +86,8 @@ export default function CalendarPage() {
     time: '09:00'
   });
   const [showSmartSuggestions, setShowSmartSuggestions] = useState(false);
+  const [isLoadingPlan, setIsLoadingPlan] = useState(false);
+  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
 
   const getPlatformLink = (item: ScheduledItem) => {
     const content = item.hashtags 
@@ -177,6 +140,107 @@ export default function CalendarPage() {
     }
     
     return days;
+  };
+
+  const getMonthDateRange = (date: Date) => {
+    const start = new Date(date.getFullYear(), date.getMonth(), 1);
+    const end = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
+    return { start, end };
+  };
+
+  const fetchPlanForMonth = async () => {
+    try {
+      setIsLoadingPlan(true);
+      const { start, end } = getMonthDateRange(currentDate);
+      const res = await fetch(`/api/marketing-plan?start=${start.toISOString().slice(0, 10)}&end=${end.toISOString().slice(0, 10)}`);
+      if (!res.ok) throw new Error('Failed to load plan');
+      const data = await res.json();
+      const items: ScheduledItem[] = [];
+      for (const day of (data.days || [])) {
+        const dayStr: string = day.date;
+        const tasks = day.tasks || [];
+        for (let i = 0; i < tasks.length; i++) {
+          const t = tasks[i];
+          const time = t.time || getSmartTimeForType(t.type, new Date(dayStr));
+          items.push({
+            id: `plan-${dayStr}-${i}`,
+            title: t.title,
+            content: t.content || '',
+            type: t.type,
+            scheduledFor: `${dayStr}T${time}:00`,
+            status: 'scheduled',
+          } as ScheduledItem);
+        }
+      }
+      setScheduledItems(prev => {
+        const manual = prev.filter(i => !i.id.startsWith('plan-'));
+        return [...manual, ...items];
+      });
+    } catch (e) {
+      toast.error('Could not load launch plan for this month');
+    } finally {
+      setIsLoadingPlan(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPlanForMonth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentDate.getFullYear(), currentDate.getMonth()]);
+
+  const generateThirtyDayPlan = async () => {
+    try {
+      setIsGeneratingPlan(true);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const res = await fetch('/api/marketing-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ startDate: today.toISOString().slice(0, 10) })
+      });
+      if (!res.ok) throw new Error('Failed to generate plan');
+      toast.success('30-day launch plan created');
+      await fetchPlanForMonth();
+    } catch (e) {
+      toast.error('Failed to create plan');
+    } finally {
+      setIsGeneratingPlan(false);
+    }
+  };
+
+  // Auto-send today's reminder once per day upon opening the calendar
+  useEffect(() => {
+    const key = `reminder_sent_${new Date().toISOString().slice(0, 10)}`;
+    const already = typeof window !== 'undefined' ? localStorage.getItem(key) : '1';
+    if (already) return;
+    (async () => {
+      try {
+        const res = await fetch('/api/marketing-plan/reminders/auto', { method: 'POST' });
+        if (res.ok) {
+          localStorage.setItem(key, '1');
+        }
+      } catch {
+        // ignore
+      }
+    })();
+  }, []);
+
+  const completeSelectedDay = async () => {
+    if (!selectedDate) return;
+    try {
+      const res = await fetch('/api/marketing-plan/complete-task', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskDay: selectedDate })
+      });
+      if (!res.ok) throw new Error('Failed');
+      toast.success('Marked day complete');
+      await fetchPlanForMonth();
+    } catch (e) {
+      toast.error('Could not complete the day');
+    }
   };
 
   const getItemsForDate = (day: number) => {
@@ -241,13 +305,23 @@ export default function CalendarPage() {
           </p>
         </div>
         
-        <Button
-          onClick={() => setShowNewEvent(true)}
-          className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Schedule Content
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={generateThirtyDayPlan}
+            disabled={isGeneratingPlan}
+            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+          >
+            <Rocket className="h-4 w-4 mr-2" />
+            {isGeneratingPlan ? 'Creating…' : 'Auto-Fill 30-Day Plan'}
+          </Button>
+          <Button
+            onClick={() => setShowNewEvent(true)}
+            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Schedule Content
+          </Button>
+        </div>
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -359,7 +433,7 @@ export default function CalendarPage() {
           transition={{ delay: 0.2 }}
           className="space-y-6"
         >
-          {showNewEvent ? (
+           {showNewEvent ? (
             <div className="glassmorphism rounded-xl p-6">
               <h3 className="text-lg font-bold font-sora mb-4">Schedule Content</h3>
               
@@ -459,8 +533,32 @@ export default function CalendarPage() {
                 </div>
               </div>
             </div>
-          ) : (
+            ) : (
             <>
+              {selectedDate && (
+                <div className="glassmorphism rounded-xl p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold font-sora">{selectedDate}</h3>
+                    <Button size="sm" onClick={completeSelectedDay} className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white">Mark Day Complete</Button>
+                  </div>
+                  <div className="space-y-2">
+                    {scheduledItems.filter(i => i.scheduledFor.startsWith(selectedDate)).map(i => {
+                      const Icon = typeIcons[i.type];
+                      return (
+                        <div key={i.id} className="flex items-start gap-2 glassmorphism-dark rounded-lg p-2">
+                          <div className={`p-1 rounded bg-gradient-to-r ${typeColors[i.type]}`}>
+                            <Icon className="h-3 w-3 text-white" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold truncate">{i.title}</div>
+                            {i.content && <div className="text-xs text-muted-foreground line-clamp-3" dangerouslySetInnerHTML={{ __html: i.content.replace(/\n/g, '<br/>') }} />}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               {/* Upcoming Events */}
               <div className="glassmorphism rounded-xl p-6">
                 <h3 className="text-lg font-bold font-sora mb-4">Upcoming</h3>
@@ -541,6 +639,9 @@ export default function CalendarPage() {
                       {scheduledItems.filter(i => i.status === 'draft').length}
                     </span>
                   </div>
+                    {isLoadingPlan && (
+                      <div className="text-xs text-muted-foreground">Loading plan…</div>
+                    )}
                 </div>
               </div>
             </>

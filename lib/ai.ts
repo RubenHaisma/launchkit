@@ -191,7 +191,8 @@ Return the content optimized for maximum engagement and performance.
         variations: z.array(z.string()).optional().describe('2-3 alternative versions'),
         hashtags: z.array(z.string()).optional().describe('Relevant hashtags'),
         suggestedPostTime: z.string().optional().describe('Optimal posting time'),
-        engagementPrediction: z.number().min(1).max(10).optional().describe('Predicted engagement score'),
+        // Accept 1-100 from models; will normalize to 1-10 after parsing
+        engagementPrediction: z.number().min(1).max(100).optional().describe('Predicted engagement score (1-10 or 1-100)'),
         optimizations: z.array(z.string()).optional().describe('Suggestions to improve performance')
       });
 
@@ -205,6 +206,12 @@ Return the content optimized for maximum engagement and performance.
       });
 
       const generatedContent = result.object as GeneratedContent;
+      const normalizedEngagement =
+        typeof generatedContent.engagementPrediction === 'number'
+          ? (generatedContent.engagementPrediction > 10
+              ? Math.min(10, generatedContent.engagementPrediction / 10)
+              : generatedContent.engagementPrediction)
+          : undefined;
       
       // Special handling for Twitter threads
       if (contentType === 'twitter-thread') {
@@ -229,9 +236,10 @@ Return the content optimized for maximum engagement and performance.
         };
       }
       
-      return { 
-        ...generatedContent, 
-        provider: result.provider 
+      return {
+        ...generatedContent,
+        engagementPrediction: normalizedEngagement,
+        provider: result.provider
       };
     } else {
       // For simple content, use generateText

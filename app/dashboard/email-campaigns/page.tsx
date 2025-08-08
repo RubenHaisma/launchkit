@@ -338,10 +338,9 @@ export default function EmailCampaignsPage() {
       </motion.div>
 
       <Tabs defaultValue="campaigns" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 glassmorphism">
+          <TabsList className="grid w-full grid-cols-3 glassmorphism">
           <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
           <TabsTrigger value="templates">Templates</TabsTrigger>
-          <TabsTrigger value="subscribers">Subscribers</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
@@ -378,18 +377,7 @@ export default function EmailCampaignsPage() {
                 </SelectContent>
               </Select>
               
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="glassmorphism-dark border-white/20 w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="newsletter">Newsletter</SelectItem>
-                  <SelectItem value="announcement">Announcement</SelectItem>
-                  <SelectItem value="onboarding">Onboarding</SelectItem>
-                  <SelectItem value="promotional">Promotional</SelectItem>
-                </SelectContent>
-              </Select>
+              {/* Removed type filter - not applicable to outreach campaigns */}
             </div>
           </motion.div>
 
@@ -413,9 +401,7 @@ export default function EmailCampaignsPage() {
                       }>
                         {campaign.status}
                       </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        {campaign.type}
-                      </Badge>
+                      
                     </div>
                     <p className="text-sm text-muted-foreground mb-2">{campaign.subject}</p>
                     <div className="text-xs text-muted-foreground">
@@ -447,20 +433,20 @@ export default function EmailCampaignsPage() {
                 
                 <div className="grid grid-cols-4 gap-4 text-sm">
                   <div>
-                    <div className="text-muted-foreground">Subscribers</div>
-                    <div className="font-semibold">{campaign.subscribers.toLocaleString()}</div>
+                    <div className="text-muted-foreground">Recipients</div>
+                    <div className="font-semibold">{campaign.totalRecipients.toLocaleString()}</div>
                   </div>
                   <div>
                     <div className="text-muted-foreground">Sent</div>
-                    <div className="font-semibold">{campaign.sent.toLocaleString()}</div>
+                    <div className="font-semibold">{campaign.sentCount.toLocaleString()}</div>
                   </div>
                   <div>
                     <div className="text-muted-foreground">Opened</div>
                     <div className="font-semibold text-blue-400">
-                      {campaign.opened.toLocaleString()} 
-                      {campaign.sent > 0 && (
+                      {campaign.openedCount.toLocaleString()} 
+                      {campaign.sentCount > 0 && (
                         <span className="text-xs ml-1">
-                          ({Math.round((campaign.opened / campaign.sent) * 100)}%)
+                          ({Math.round((campaign.openedCount / campaign.sentCount) * 100)}%)
                         </span>
                       )}
                     </div>
@@ -468,21 +454,21 @@ export default function EmailCampaignsPage() {
                   <div>
                     <div className="text-muted-foreground">Clicked</div>
                     <div className="font-semibold text-green-400">
-                      {campaign.clicked.toLocaleString()}
-                      {campaign.sent > 0 && (
+                      {campaign.clickedCount.toLocaleString()}
+                      {campaign.sentCount > 0 && (
                         <span className="text-xs ml-1">
-                          ({Math.round((campaign.clicked / campaign.sent) * 100)}%)
+                          ({Math.round((campaign.clickedCount / campaign.sentCount) * 100)}%)
                         </span>
                       )}
                     </div>
                   </div>
                 </div>
                 
-                {(campaign.sentAt || campaign.scheduledFor) && (
+                {(campaign.sentAt || campaign.scheduledAt) && (
                   <div className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
                     <Clock className="h-3 w-3" />
                     {campaign.sentAt ? `Sent: ${new Date(campaign.sentAt).toLocaleString()}` : 
-                     campaign.scheduledFor ? `Scheduled: ${new Date(campaign.scheduledFor).toLocaleString()}` : ''}
+                     campaign.scheduledAt ? `Scheduled: ${new Date(campaign.scheduledAt).toLocaleString()}` : ''}
                   </div>
                 )}
               </Card>
@@ -523,12 +509,10 @@ export default function EmailCampaignsPage() {
                       {template.category}
                     </Badge>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    Used {template.usageCount} times
-                  </div>
+                  
                 </div>
                 
-                <p className="text-sm text-muted-foreground mb-3">{template.description}</p>
+                
                 
                 <div className="glassmorphism-dark rounded-lg p-3 mb-4">
                   <div className="text-xs font-semibold mb-1">Subject:</div>
@@ -563,83 +547,7 @@ export default function EmailCampaignsPage() {
           </motion.div>
         </TabsContent>
 
-        {/* Subscribers Tab */}
-        <TabsContent value="subscribers" className="space-y-6 mt-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="glassmorphism rounded-xl p-6"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold font-sora">Subscriber Management</h2>
-              <div className="flex gap-3">
-                <Button variant="outline" className="glassmorphism">
-                  <Upload className="h-4 w-4 mr-2" />
-                  Import CSV
-                </Button>
-                <Button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Subscriber
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="glassmorphism-dark rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-green-400 mb-1">{subscribers.filter(s => s.status === 'active').length}</div>
-                <div className="text-sm text-muted-foreground">Active Subscribers</div>
-              </div>
-              <div className="glassmorphism-dark rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-yellow-400 mb-1">127</div>
-                <div className="text-sm text-muted-foreground">New This Week</div>
-              </div>
-              <div className="glassmorphism-dark rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-red-400 mb-1">{subscribers.filter(s => s.status === 'unsubscribed').length}</div>
-                <div className="text-sm text-muted-foreground">Unsubscribed</div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              {subscribers.slice(0, 10).map((subscriber) => (
-                <div key={subscriber.id} className="glassmorphism-dark rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-semibold">
-                        {subscriber.firstName?.[0] || subscriber.email[0].toUpperCase()}
-                      </div>
-                      <div>
-                        <div className="font-semibold">
-                          {subscriber.firstName && subscriber.lastName 
-                            ? `${subscriber.firstName} ${subscriber.lastName}` 
-                            : subscriber.email}
-                        </div>
-                        <div className="text-sm text-muted-foreground">{subscriber.email}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={subscriber.status === 'active' ? 'default' : 'destructive'}>
-                        {subscriber.status}
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        {subscriber.source}
-                      </Badge>
-                    </div>
-                  </div>
-                  {subscriber.tags.length > 0 && (
-                    <div className="flex gap-1 mt-2">
-                      {subscriber.tags.map((tag) => (
-                        <Badge key={tag} variant="outline" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        </TabsContent>
+        {/* Subscribers tab removed; recipients are managed in the Outreach page */}
 
         {/* Analytics Tab */}
         <TabsContent value="analytics" className="space-y-6 mt-6">
@@ -814,16 +722,7 @@ export default function EmailCampaignsPage() {
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="templateDescription">Description</Label>
-                <Input
-                  id="templateDescription"
-                  value={newTemplate.description}
-                  onChange={(e) => setNewTemplate(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Brief description of this template"
-                  className="glassmorphism-dark border-white/20"
-                />
-              </div>
+              {/* Optional description removed; templates API stores name/subject/content/category/variables */}
 
               <div>
                 <Label htmlFor="templateSubject">Subject Line</Label>
